@@ -1,0 +1,17 @@
+*.iml
+.gradle
+/NoFussCalendar/.gradle
+/NoFussCalendar/local.properties
+.idea
+/NoFussCalendar/.idea/caches
+/NoFussCalendar/.idea/libraries
+/NoFussCalendar/.idea/modules.xml
+/NoFussCalendar/.idea/workspace.xml
+/NoFussCalendar/.idea/navEditor.xml
+/NoFussCalendar/.idea/assetWizardSettings.xml
+.DS_Store
+/NoFussCalendar/build
+/NoFussCalendar/captures
+.externalNativeBuild
+.cxx
+local.properties
