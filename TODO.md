@@ -1,9 +1,9 @@
 # TODO
 ## Core
 - [ ] Calendar view (simple month and dates)
+- [ ] Add/edit/delete event with dialogue boxes
 - [ ] Read from .ics file and update view on startup
 - [ ] Run in background and read .ics every x minutes
-- [ ] Add/edit/delete event with dialogue boxes
 - [ ] Write to .ics file upon any modification
 - [ ] Handle multiple calendars stored in separate .ics files
 
