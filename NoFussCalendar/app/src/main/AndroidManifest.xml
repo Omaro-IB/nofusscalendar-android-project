@@ -19,7 +19,6 @@
             android:theme="@style/Theme.NoFussCalendar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                a
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>

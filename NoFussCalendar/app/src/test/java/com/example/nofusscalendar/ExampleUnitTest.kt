@@ -1,4 +1,4 @@
-package com.example.nofusscalendar
+package com.example.nofusscalendar1
 
 import org.junit.Test
 
