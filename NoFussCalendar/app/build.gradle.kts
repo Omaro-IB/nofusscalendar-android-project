@@ -5,6 +5,7 @@ plugins {
 
 android {
     namespace = "com.example.nofusscalendar"
+
     compileSdk = 34
 
     defaultConfig {
@@ -51,6 +52,7 @@ android {
 
 dependencies {
 
+    implementation(libs.kotlinx.datetime)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

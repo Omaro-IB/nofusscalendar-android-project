@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="blackshadow">#0b0f02</color>
+    <color name="black">#000000</color>
     <color name="buttongreen">#0b5036</color>
     <color name="buttongreengradient">#176648</color>
     <color name="buttongreenhighlight">#97c797</color>
     <color name="buttongreenshadow">#06130e</color>
     <color name="beige">#e9d3bb</color>
+    <color name="beigedark">#c3b19e</color>
     <color name="pinkbeige">#ecddd8</color>
     <color name="whitehighlight">#f9f1e8</color>
 </resources>
