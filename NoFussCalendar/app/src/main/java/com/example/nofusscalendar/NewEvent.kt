@@ -49,15 +49,10 @@ class NewEvent : ComponentActivity() {
         setContent {
             NoFussCalendarTheme {
                 Column {
-                    Spacer(modifier= Modifier
-                        .height(60.dp)
-                        .fillMaxWidth()
-                        .background(colorResource(R.color.beigedark)))
-                    EventDialog(modifier = Modifier
-                        .fillMaxHeight()
-                        .fillMaxWidth()
-                        .background(colorResource(R.color.beige)),
-                        2024, 6, 25)  // TODO: Update day based on selected day
+                    // Dark space
+                    Spacer(modifier= Modifier.height(60.dp).fillMaxWidth().background(colorResource(R.color.beigedark)))
+                    // Event Dialog -- TODO: Update day based on selected day
+                    EventDialog(modifier = Modifier.fillMaxHeight().fillMaxWidth().background(colorResource(R.color.beige)), 2024, 6, 25)
                 }
             }
         }
@@ -122,6 +117,7 @@ fun EventDialog(modifier: Modifier = Modifier, startYear: Int, startMonth: Int, 
 
     Column (modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(modifier = Modifier.height(20.dp))
+        // Title & Cancel/Add buttons
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
             TextButton(
                 onClick = { /* TODO: exit activity */ }
@@ -130,19 +126,25 @@ fun EventDialog(modifier: Modifier = Modifier, startYear: Int, startMonth: Int, 
             }
             Text("New Event", fontWeight = FontWeight.Bold)
             TextButton(
-                onClick = { /* TODO: exit activity */ }
+                onClick = { /* TODO: exit activity and save */ }
             ) {
                 Text("Add", color = colorResource(R.color.buttongreen))
             }
         }
         Spacer(modifier = Modifier.height(15.dp))
+
+        // Title and Location fields
         TextField(value = title, onValueChange = { title = it }, placeholder = { Text("Title") }, modifier = textFieldModifier)
         TextField(value = location, onValueChange = { location = it }, placeholder = { Text("Location or Video Call") }, modifier = textFieldModifier)
         Spacer(modifier = Modifier.height(15.dp))
+
+        // All-day toggle
         Box {
             TextField(value = "All-day", onValueChange = {}, enabled = false, singleLine = true, modifier = textFieldModifier)
             Switch(checked = allDay, onCheckedChange = { allDay = it }, modifier = Modifier.offset(305.dp))
         }
+
+        // Start date and time
         Box(modifier = Modifier.alpha(dateTimeAlpha)) {
             TextField(value = "Starts", onValueChange = {}, enabled = false, singleLine = true, modifier = textFieldModifier)
             Row(modifier = Modifier.offset(125.dp)){
@@ -154,6 +156,8 @@ fun EventDialog(modifier: Modifier = Modifier, startYear: Int, startMonth: Int, 
                 }
             }
         }
+
+        // End date and time
         Box(modifier = Modifier.alpha(dateTimeAlpha)) {
             TextField(value = "Ends", onValueChange = {}, enabled = false, singleLine = true, modifier = textFieldModifier)
             Row(modifier = Modifier.offset(125.dp)){
