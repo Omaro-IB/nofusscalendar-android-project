@@ -1,4 +1,11 @@
-import kotlinx.datetime.*
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.daysUntil
+import kotlinx.datetime.isoDayNumber
+import kotlinx.datetime.toLocalDateTime
 
 class DTUtils {
     companion object {
@@ -106,6 +113,14 @@ class DTUtils {
                     nHour -= 12
                 }
                 return "$nHour:${minute.toString().padStart(2, '0')} $ending"
+            }
+        }
+
+        fun clipString(string: String, replaceWith: String, limit: Int): String {
+            if (string.length > limit) {
+                return string.slice(0..limit-1) + replaceWith
+            } else {
+                return string
             }
         }
     }

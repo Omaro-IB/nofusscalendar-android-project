@@ -14,4 +14,20 @@
     <color name="textfield">#E3E2E1</color>
     <color name="textfielddisabled">#A9A9A9</color>
     <color name="buttonred">#E24F4D</color>
+    <color name="black_css3">#000000</color>
+    <color name="silver_css3">#C0C0C0</color>
+    <color name="gray_css3">#808080</color>
+    <color name="white_css3">#FFFFFF</color>
+    <color name="maroon_css3">#800000</color>
+    <color name="red_css3">#FF0000</color>
+    <color name="purple_css3">#800080</color>
+    <color name="fuchsia_css3">#FF00FF</color>
+    <color name="green_css3">#008000</color>
+    <color name="lime_css3">#00FF00</color>
+    <color name="olive_css3">#808000</color>
+    <color name="yellow_css3">#FFFF00</color>
+    <color name="navy_css3">#000080</color>
+    <color name="blue_css3">#0000FF</color>
+    <color name="teal_css3">#008080</color>
+    <color name="aqua_css3">#00FFFF</color>
 </resources>
