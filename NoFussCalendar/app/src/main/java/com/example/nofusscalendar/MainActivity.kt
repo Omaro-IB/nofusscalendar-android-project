@@ -5,7 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,7 +34,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -58,9 +57,13 @@ class MainActivity : ComponentActivity() {
                         .fillMaxWidth()
                         .height(400.dp))
                     Spacer(modifier = Modifier
-                        .fillMaxHeight()
+                        .height(2.dp)
                         .fillMaxWidth()
-                        .background(colorResource(id = R.color.black)))
+                        .background(colorResource(R.color.black)))
+                    Events(modifier = Modifier
+                        .background(colorResource(R.color.beige))
+                        .fillMaxWidth()
+                        .fillMaxHeight(), 2024, 6, 25)  // TODO: Update day based on selected day
                 }
             }
         }
@@ -68,15 +71,29 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun DaySelect(modifier: Modifier = Modifier, day: Int) {
-    var selected: Boolean by remember { mutableStateOf(false) }
+fun Events(modifier: Modifier = Modifier, year: Int, month: Int, day: Int) {
+    Column (modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Spacer(modifier = Modifier.height(20.dp))
+        Text("Events for ${DTUtils.weekDayIntToStr(DTUtils.dateToWeekDay(year, month, day))}, $day ${DTUtils.monthIntToStr(month)} $year", fontWeight = FontWeight.Bold)
+    }
+    // TODO: render all events using VEvent.kt, icalendar-kotlin, and media store to read file
+//    LazyColumn{
+//        items(...) { event ->
+//            ...
+//        }
+//    }
+}
+
+
+@Composable
+fun DaySelect(modifier: Modifier = Modifier, day: Int, selected: Boolean) {
     val c = when(selected){
         true -> colorResource(R.color.buttongreenhighlight)
         else -> colorResource(R.color.buttongreen)
     }
 
     Box {
-        Button(onClick = { selected = !selected },
+        Button(onClick = { /* TODO: Update selected day */ },
             modifier = modifier
                 .fillMaxWidth()
                 .align(Alignment.Center),
@@ -88,18 +105,18 @@ fun DaySelect(modifier: Modifier = Modifier, day: Int) {
 }
 
 @Composable
-fun MonthDays(startOn: Int, numDays: Int) {
-    val weekDays = arrayOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
-
+fun MonthDays(startOn: Int, numDays: Int, selectedDay: Int) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(7)
     ) {
         items(7) { day ->
-            Text(text = weekDays[day], textAlign = TextAlign.Center)
+            Text(text = DTUtils.weekDayIntToStr(day+1, true), textAlign = TextAlign.Center)
         }
     }
 
-    Divider(color = colorResource(R.color.blackshadow), thickness = 1.dp, modifier = Modifier.padding(top = 10.dp, bottom = 5.dp).padding(horizontal = 12.dp))
+    Divider(color = colorResource(R.color.blackshadow), thickness = 1.dp, modifier = Modifier
+        .padding(top = 10.dp, bottom = 5.dp)
+        .padding(horizontal = 12.dp))
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(7),
@@ -108,7 +125,7 @@ fun MonthDays(startOn: Int, numDays: Int) {
         items(numDays+startOn-1) { day ->
             when(day+1) {
                 in (1..<startOn) -> Spacer(modifier = Modifier.fillMaxWidth())
-                else -> DaySelect(day = day - startOn + 2)
+                else -> DaySelect(day = day - startOn + 2, selected = selectedDay == (day - startOn + 2))
             }
         }
     }
@@ -116,8 +133,9 @@ fun MonthDays(startOn: Int, numDays: Int) {
 
 @Composable
 fun Calendar(modifier: Modifier = Modifier) {
-    var month: Int by remember { mutableStateOf(DTUtils.getMonth()) }
     var year: Int by remember { mutableStateOf(DTUtils.getYear()) }
+    var month: Int by remember { mutableStateOf(DTUtils.getMonth()) }
+    val day: Int by remember { mutableStateOf(DTUtils.getDay()) }
     if (month > 12) {month = 1; year += 1 }
     if (month < 1) {month = 12; year -= 1}
     val monthS = DTUtils.monthIntToStr(month)
@@ -138,6 +156,6 @@ fun Calendar(modifier: Modifier = Modifier) {
             }
         }
         // Month grid
-        MonthDays(startOn = startsOn, numDays = numDays)
+        MonthDays(startOn = startsOn, numDays = numDays, selectedDay = day)
     }
 }

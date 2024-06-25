@@ -10,4 +10,8 @@
     <color name="beigedark">#c3b19e</color>
     <color name="pinkbeige">#ecddd8</color>
     <color name="whitehighlight">#f9f1e8</color>
+    <color name="greydef">#383838</color>
+    <color name="textfield">#E3E2E1</color>
+    <color name="textfielddisabled">#A9A9A9</color>
+    <color name="buttonred">#E24F4D</color>
 </resources>
