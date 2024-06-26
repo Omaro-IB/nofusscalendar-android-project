@@ -18,6 +18,13 @@
 	- [ ] Customization options (colors, start week on, 24-hour clock, highlight weekends)
 
 ## Current
+- [ ] Read from ICS file
+	- [ ] Permission for file selecting / IO (READ_EXTERNAL_STORAGE & WRITE_EXTERNAL_STORAGE)
+	- [ ] Read/write ICS file
+	- [ ] Save directory to internal app state
+	- [ ] ICS parser:
+		- [ ] ICS string -> VEvent object array
+		- [ ] VEvent object array -> ICS string
 - [ ] Callback states to parent (Calendar) component
 	- [x] current displayed year/month
 	- [x] current selected year/month/day
