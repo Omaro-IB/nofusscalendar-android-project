@@ -63,30 +63,25 @@ fun FileSelector() {
     )
 
     try {
-        val fin: FileInputStream = context.openFileInput("URILocation.txt") // Try reading URI from internal storage
-        Log.d("MainActivity", "Was able to read URILocation.txt")
-        var a: Int
-        val temp = StringBuilder()
-        while (fin.read().also { a = it } != -1) {
-            temp.append(a.toChar())
-        }
-        val uriS = temp.toString()
-        val intent = Intent(context, Calendar::class.java).apply {
-            putExtra("uri", uriS)
-        }
-        Log.d("MainActivity", "Was able to read file from URI, launching intent")
-        context.startActivity(intent)
+        // Try reading URI from internal storage
+        val fin: FileInputStream = context.openFileInput("URILocation.txt")
+        Log.d("MainActivity", "Read URILocation.txt - success")
+        var a: Int; val temp = StringBuilder(); while (fin.read().also { a = it } != -1) { temp.append(a.toChar()) }
+        val uriS = temp.toString()  // URI String
         fin.close()
+
+        // pass URI string to Calendar activity and start
+        val intent = Intent(context, Calendar::class.java).apply { putExtra("uri", uriS) }
+        context.startActivity(intent)
     } catch (e: IOException) {
-        Log.d("MainActivity", "Error reading location :(")
+        // Failed reading URI from internal storage
+        Log.d("MainActivity", "Read URILocation.txt - failure")
         e.printStackTrace()
-        // Reading from internal storage failed, display file selection window
-        Column(
-            modifier = Modifier.fillMaxHeight().fillMaxWidth()
-                .background(colorResource(R.color.greydef)).padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+
+        // Display file selection window
+        Column(modifier = Modifier.fillMaxHeight().fillMaxWidth().background(colorResource(R.color.greydef)).padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally)
+        {
             // Explanation text
             Text(
                 "For this app to work correctly, a file to must be selected to store app-data",
@@ -105,23 +100,21 @@ fun FileSelector() {
 
             // Select file button
             Button(onClick = { launcher.launch("*/*") }) { Text("Select File") }
-            selectedFileUri?.let { uri ->
+            selectedFileUri?.let { uri ->  // get selected file URI from file selector
                 val uriS = uri.toString()
 
-                // Write to internal storage for future use
                 try {
-                    val fos: FileOutputStream =
-                        context.openFileOutput("URILocation.txt", Context.MODE_PRIVATE)
-                    fos.write(uriS.toByteArray())
-                    fos.flush()
-                    fos.close()
+                    // Try writing to internal storage for future use
+                    val fos: FileOutputStream = context.openFileOutput("URILocation.txt", Context.MODE_PRIVATE)
+                    fos.write(uriS.toByteArray()); fos.flush(); fos.close()
+                    Log.d("MainActivity", "Write URILocation.txt - success")
+
                     // Start Calendar activity
-                    val intent = Intent(context, Calendar::class.java).apply {
-                        putExtra("uri", uriS)
-                    }
+                    val intent = Intent(context, Calendar::class.java).apply { putExtra("uri", uriS) }
                     context.startActivity(intent)
                 } catch (e: IOException) {
-                    Log.d("MainActivity", "Error saving location :(")
+                    // Error writing to URILocation.txt
+                    Log.d("MainActivity", "Write URILocation.txt - failure")
                     e.printStackTrace()
                     Text("Error saving location", color = colorResource(R.color.buttonred))
                 }
