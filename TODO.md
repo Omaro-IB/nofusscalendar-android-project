@@ -8,17 +8,19 @@
 - [ ] Handle multiple calendars stored in separate .ics files
 
 ## Other
-- [ ] Notification x hours before event
-- [ ] Home screen widget
-- [ ] Go to date
-- [ ] Toggle (show/hide) separate calendars
-- [ ] Separate views (day/month/week/month+day/year/simple event list)
-- [ ] Customization options (colors, start week on, 24-hour clock, highlight weekends)
+- [ ] **Navigation**
+	- [ ] Search for events & Go to date
+	- [ ] Toggle (show/hide) separate calendars
+	- [ ] Separate views (day/month/week/month+day/year/simple event list)
+- [ ] **Usability**
+	- [ ] Notification x hours before event
+	- [ ] Home screen widget
+	- [ ] Customization options (colors, start week on, 24-hour clock, highlight weekends)
 
 ## Current
-- [ ] Lift up states to parent (MainActivity) component
-	- [ ] current displayed year/month
-	- [ ] current selected year/month/day
+- [ ] Callback states to parent (Calendar) component
+	- [x] current displayed year/month
+	- [x] current selected year/month/day
 	- [ ] events (read from ICS on startup)
 - [ ] New activity "+" button
 	- [ ] When clicked, launch NewEvent activity with start year/month/day as current selected year/month/day
