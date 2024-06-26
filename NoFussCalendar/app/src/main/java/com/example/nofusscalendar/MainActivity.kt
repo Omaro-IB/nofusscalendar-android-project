@@ -1,4 +1,5 @@
 package com.example.nofusscalendar
+import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -40,8 +41,7 @@ import java.io.IOException
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        activityResultLauncher.launch(arrayOf(
-        ))
+//        activityResultLauncher.launch(arrayOf(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED, Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO,  Manifest.permission.READ_MEDIA_AUDIO))
         enableEdgeToEdge()
         setContent {
             NoFussCalendarTheme {
@@ -49,19 +49,19 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-    private val activityResultLauncher = registerForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions())
-        { permissions ->
-            permissions.entries.forEach {
-                val permissionName = it.key
-                val isGranted = it.value
-                if (isGranted) {
-                    Log.d("TaG", "Denied")
-                } else {
-                    Log.d("TaG", "Granted")
-                }
-            }
-        }
+//    private val activityResultLauncher = registerForActivityResult(
+//            ActivityResultContracts.RequestMultiplePermissions())
+//        { permissions ->
+//            permissions.entries.forEach {
+//                val permissionName = it.key
+//                val isGranted = it.value
+//                if (isGranted) {
+//                    Log.d("TaG", "Denied")
+//                } else {
+//                    Log.d("TaG", "Granted")
+//                }
+//            }
+//        }
 }
 
 
@@ -74,6 +74,9 @@ fun FileSelector() {
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri: Uri? ->
             selectedFileUri = uri
+            uri?.let {
+                takePersistableUriPermission(context, it)
+            }
         }
     )
 
@@ -115,11 +118,7 @@ fun FileSelector() {
 
             // Select file button
             Button(onClick = {
-
-
-
                 launcher.launch("*/*")
-
 
             }) { Text("Select File") }
             selectedFileUri?.let { uri ->  // get selected file URI from file selector
@@ -146,3 +145,8 @@ fun FileSelector() {
 }
 
 
+fun takePersistableUriPermission(context: Context, uri: Uri) {
+    val contentResolver: ContentResolver = context.contentResolver
+    val flags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+    contentResolver.takePersistableUriPermission(uri, flags)
+}
