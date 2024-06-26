@@ -124,11 +124,11 @@ fun EventDialog(modifier: Modifier = Modifier, startYear: Int, startMonth: Int, 
             ) {
                 Text("Cancel", color = colorResource(R.color.buttonred))
             }
-            Text("New Event", fontWeight = FontWeight.Bold)
+            Text("Event", fontWeight = FontWeight.Bold)
             TextButton(
                 onClick = { /* TODO: exit activity and save */ }
             ) {
-                Text("Add", color = colorResource(R.color.buttongreen))
+                Text("Confirm", color = colorResource(R.color.buttongreen))
             }
         }
         Spacer(modifier = Modifier.height(15.dp))

@@ -115,13 +115,5 @@ class DTUtils {
                 return "$nHour:${minute.toString().padStart(2, '0')} $ending"
             }
         }
-
-        fun clipString(string: String, replaceWith: String, limit: Int): String {
-            if (string.length > limit) {
-                return string.slice(0..limit-1) + replaceWith
-            } else {
-                return string
-            }
-        }
     }
 }
