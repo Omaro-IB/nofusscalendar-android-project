@@ -39,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
@@ -54,7 +55,6 @@ class Calendar : ComponentActivity() {
 
         setContent {
             val uri = intent.getStringExtra("uri") ?: "No uri"
-
             NoFussCalendarTheme {
                 Column {
                     // Dark space
@@ -90,9 +90,8 @@ fun Calendar(modifier: Modifier = Modifier, uri: String) {
     if (month > 12) {month = 1; year += 1 }
     if (month < 1) {month = 12; year -= 1}
 
-    // Create event intent
-
-
+    // TODO: Get ICS from VEventUtils.readTextFromUri(LocalContext.current, uri)?: "Error reading URI"
+    Text(VEventUtils.readTextFromUri(LocalContext.current, uri)?: "Error reading URI")
 
     Column(modifier = modifier) {
         Column(modifier = Modifier.height(400.dp), horizontalAlignment = Alignment.CenterHorizontally) {
