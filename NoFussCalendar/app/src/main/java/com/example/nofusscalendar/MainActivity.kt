@@ -40,6 +40,8 @@ import java.io.IOException
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        activityResultLauncher.launch(arrayOf(
+        ))
         enableEdgeToEdge()
         setContent {
             NoFussCalendarTheme {
@@ -47,6 +49,19 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+    private val activityResultLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions())
+        { permissions ->
+            permissions.entries.forEach {
+                val permissionName = it.key
+                val isGranted = it.value
+                if (isGranted) {
+                    Log.d("TaG", "Denied")
+                } else {
+                    Log.d("TaG", "Granted")
+                }
+            }
+        }
 }
 
 
@@ -99,7 +114,14 @@ fun FileSelector() {
             Spacer(modifier = Modifier.height(20.dp))
 
             // Select file button
-            Button(onClick = { launcher.launch("*/*") }) { Text("Select File") }
+            Button(onClick = {
+
+
+
+                launcher.launch("*/*")
+
+
+            }) { Text("Select File") }
             selectedFileUri?.let { uri ->  // get selected file URI from file selector
                 val uriS = uri.toString()
 
