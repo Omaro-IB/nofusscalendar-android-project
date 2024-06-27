@@ -101,7 +101,9 @@ fun MainScreen() {
         var a: Int; val temp = StringBuilder(); while (fin.read().also { a = it } != -1) { temp.append(a.toChar()) }
         val uriS = temp.toString()  // URI String
         fin.close()
+        if (uriS == "null") {throw IOException("Stored URILocation corrupted")}
         val uri: Uri = Uri.parse(uriS) // URI URI Object
+        Log.d("READ URI AS!", uriS)
         startCalendar(uri)  // Start Calendar with URI!
     } catch (e: IOException) {
         // URILocation.txt not initialized
