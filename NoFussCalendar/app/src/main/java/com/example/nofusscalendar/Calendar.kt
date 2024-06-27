@@ -90,7 +90,9 @@ fun Calendar(modifier: Modifier = Modifier, uri: String) {
     if (month > 12) {month = 1; year += 1 }
     if (month < 1) {month = 12; year -= 1}
 
-    // TODO: Get ICS from VEventUtils.readTextFromUri(LocalContext.current, uri)?: "Error reading URI"
+    // TODO: Remove this, parse ICS, and store events in state
+    //  Get ICS as string: VEventUtils.readTextFromUri(LocalContext.current, uri)?: "Error reading URI"
+    Text("Calendar!")
     Text(VEventUtils.readTextFromUri(LocalContext.current, uri)?: "Error reading URI")
 
     Column(modifier = modifier) {
