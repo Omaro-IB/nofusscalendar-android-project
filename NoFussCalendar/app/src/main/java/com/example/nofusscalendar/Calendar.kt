@@ -78,6 +78,11 @@ class Calendar : ComponentActivity() {
 
 @Composable
 fun Calendar(modifier: Modifier = Modifier, uri: String) {
+    // ICS Parsing and Events
+    val icsRaw = VEventUtils.readTextFromUri(LocalContext.current, uri)?: ""
+    if (icsRaw == "") { Text("Error reading ICS file", color = colorResource(R.color.buttonred)) }
+    val events = VEventUtils.parseICS(icsRaw)  // contains all events info, easy to parse between .ics string
+    val eventsHashMap = VEventUtils.createEventHashMap(events)  // hash map for quick lookup & quick display
     // Displayed year/month
     var year: Int by remember { mutableStateOf(DTUtils.getYear()) }
     var month: Int by remember { mutableStateOf(DTUtils.getMonth()) }
@@ -89,11 +94,6 @@ fun Calendar(modifier: Modifier = Modifier, uri: String) {
     // Fix displayed month
     if (month > 12) {month = 1; year += 1 }
     if (month < 1) {month = 12; year -= 1}
-
-    // TODO: Remove this, parse ICS, and store events in state
-    //  Get ICS as string: VEventUtils.readTextFromUri(LocalContext.current, uri)?: "Error reading URI"
-    Text("Calendar!")
-    Text(VEventUtils.readTextFromUri(LocalContext.current, uri)?: "Error reading URI")
 
     Column(modifier = modifier) {
         Column(modifier = Modifier.height(400.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -131,7 +131,8 @@ fun Calendar(modifier: Modifier = Modifier, uri: String) {
             Events(modifier = Modifier
                 .background(colorResource(R.color.beige))
                 .fillMaxWidth()
-                .fillMaxHeight(), selectedYear, selectedMonth, selectedDay)
+                .fillMaxHeight(), selectedYear, selectedMonth, selectedDay, eventsHashMap["${selectedYear}${selectedMonth.toString().padStart(2, '0')}${selectedDay.toString().padStart(2, '0')}"] ?: arrayOf(arrayOf())
+            )
             // Add event button
             val iconSize = 96
             Box(modifier = Modifier
@@ -146,7 +147,7 @@ fun Calendar(modifier: Modifier = Modifier, uri: String) {
 
 
 @Composable
-fun Event(title: String, location: String, description: String, allDay: Boolean, color: String, start: String, end: String){
+fun Event(title: String, location: String, description: String, color: String, allDay: String, start: String, end: String){
     val c = when(color){
         "black" -> colorResource(R.color.black_css3)
         "silver" -> colorResource(R.color.silver_css3)
@@ -187,14 +188,14 @@ fun Event(title: String, location: String, description: String, allDay: Boolean,
                 .fillMaxWidth()
                 .padding(end = 40.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                 Row {Text(VEventUtils.clipString(title, "..", 14), fontWeight = FontWeight.Bold); Text(" @${VEventUtils.clipString(location, "..", 14)}", fontStyle = FontStyle.Italic)}
-                Text(if (allDay) "all-day  " else (start))
+                Text(if (allDay == "yes") "all-day  " else (start))
             }
             // Description and end time
             Row(modifier = Modifier
                 .fillMaxWidth()
                 .padding(end = 40.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(VEventUtils.clipString(description, "...", 28), color = colorResource(R.color.gray_css3))
-                Text(if (allDay) "" else (end))
+                Text(if (allDay == "yes") "" else (end))
             }
             Spacer(modifier = Modifier.padding(vertical = 2.dp))
             Spacer(modifier = Modifier
@@ -208,23 +209,22 @@ fun Event(title: String, location: String, description: String, allDay: Boolean,
 }
 
 @Composable
-fun Events(modifier: Modifier = Modifier, year: Int, month: Int, day: Int) {
+fun Events(modifier: Modifier = Modifier, year: Int, month: Int, day: Int, eventArray: Array<Array<String>>) {
     // Title
     Column (modifier = modifier) {
         Spacer(modifier = Modifier.height(20.dp))
         Text("Events for ${DTUtils.weekDayIntToStr(DTUtils.dateToWeekDay(year, month, day))}, $day ${DTUtils.monthIntToStr(month)} $year:", fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.height(10.dp))
-        // TODO: render all events using VEvent.kt
-//      LazyColumn{
-//          items(...) { event ->
-//               ...
-//          }
-//      }
-        // TODO: remove this (test)
-        Column {
-            Event("An Event or something or other", "Somewhereeeeeeeeeeeee", "Something descriptive", false, "aqua", "11:00 AM", "12:00 PM")
-            Event("Go do something", "idk", "A description", false, "silver", "9:00 AM", "7:00 PM")
-            Event("Another Event", "Somewhere else", "Something else descriptive because I want more and more words", true, "maroon", "11:00 AM", "12:00 PM")
+
+        if (eventArray.isEmpty()) {
+            Text("No events for this day")
+        } else {
+            // TODO: take eventArray [title, location, description, color, allDay, start, end] and display event
+    //      LazyColumn{
+    //          items(...) { event ->
+    //               ...
+    //          }
+    //      }
         }
     }
 }
