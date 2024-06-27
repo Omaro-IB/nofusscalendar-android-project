@@ -2,7 +2,7 @@
 ## Core
 - [X] Calendar view (simple month and dates)
 - [x] Add/edit/delete event with dialogue boxes
-- [ ] Read from .ics file and update view on startup
+- [x] Read from .ics file and update view on startup
 - [ ] Run in background and read .ics every x minutes
 - [ ] Write to .ics file upon any modification
 - [ ] Handle multiple calendars stored in separate .ics files
@@ -21,7 +21,7 @@
 - [ ] Read from ICS file
 	- [x] Select ICS file
 	- [x] Read/write ICS file
-	- [ ] Save directory to internal app state
+	- [x] Save directory to internal app state
 	- [ ] ICS parser:
 		- [ ] ICS string -> VEvent object array
 		- [ ] VEvent object array -> ICS string
