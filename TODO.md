@@ -18,13 +18,14 @@
 	- [ ] Customization options (colors, start week on, 24-hour clock, highlight weekends)
 
 ## Current
-- [ ] Read from ICS file
+- [x] Read from ICS file
 	- [x] Select ICS file
 	- [x] Read/write ICS file
 	- [x] Save directory to internal app state
-	- [ ] ICS parser:
-		- [ ] ICS string -> VEvent object array
-		- [ ] VEvent object array -> ICS string
+	- [x] ICS parser:
+		- [x] ICS string -> VEvent object array
+		- [x] VEvent object array -> ICS string
+	- [ ] Convert VEvent object array -> hash map of renderable arrays
 - [x] Callback states to parent (Calendar) component
 	- [x] current displayed year/month
 	- [x] current selected year/month/day
