@@ -2,6 +2,7 @@ package com.example.nofusscalendar
 
 import DTUtils
 import VEventUtils
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -39,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
@@ -88,6 +90,7 @@ fun Calendar(modifier: Modifier = Modifier, icsRaw: String) {
 
 @Composable
 fun MainScreen(modifier: Modifier = Modifier, eventsHashMap: HashMap<String, Array<Array<String>>>) {
+    val context = LocalContext.current
     // Displayed year/month
     var year: Int by remember { mutableStateOf(DTUtils.getYear()) }
     var month: Int by remember { mutableStateOf(DTUtils.getMonth()) }
@@ -95,6 +98,8 @@ fun MainScreen(modifier: Modifier = Modifier, eventsHashMap: HashMap<String, Arr
     var selectedYear: Int by remember { mutableStateOf(DTUtils.getYear()) }
     var selectedMonth: Int by remember { mutableStateOf(DTUtils.getMonth()) }
     var selectedDay: Int by remember { mutableStateOf(DTUtils.getDay()) }
+    // Formatted YYYYMMDD string
+    val selectedDateS = "${selectedYear}${selectedMonth.toString().padStart(2, '0')}${selectedDay.toString().padStart(2, '0')}"
 
     // Fix displayed month
     if (month > 12) {month = 1; year += 1 }
@@ -136,13 +141,15 @@ fun MainScreen(modifier: Modifier = Modifier, eventsHashMap: HashMap<String, Arr
             Events(modifier = Modifier
                 .background(colorResource(R.color.beige))
                 .fillMaxWidth()
-                .fillMaxHeight(), selectedYear, selectedMonth, selectedDay, eventsHashMap["${selectedYear}${selectedMonth.toString().padStart(2, '0')}${selectedDay.toString().padStart(2, '0')}"])
+                .fillMaxHeight(), selectedYear, selectedMonth, selectedDay, eventsHashMap[selectedDateS])
             // Add event button
             val iconSize = 96
             Box(modifier = Modifier
                 .padding(vertical = 20.dp)
                 .align(Alignment.BottomEnd)) {
-                IconButton(onClick = { /* TODO: Handle add event */ }, modifier = Modifier.size(iconSize.dp)){ Icon(
+                IconButton(onClick = { val intent = Intent(context, NewEvent::class.java).apply { putExtra("selectedDate", selectedDateS) } // Start New Event activity
+                                       context.startActivity(intent) }
+                    , modifier = Modifier.size(iconSize.dp)){ Icon(
                     painterResource(R.drawable.plus_box), tint = colorResource(R.color.buttongreen), contentDescription = "Add event", modifier = Modifier.size((iconSize*0.85).dp)) }
             }
         }
@@ -223,7 +230,6 @@ fun Events(modifier: Modifier = Modifier, year: Int, month: Int, day: Int, event
         if (eventArray == null) {
             Text("No events for this day")
         } else {
-            // TODO: take eventArray [title, location, description, color, allDay, start, end] and display event
           LazyColumn{
               items(eventArray.size) { event ->
                   Event(

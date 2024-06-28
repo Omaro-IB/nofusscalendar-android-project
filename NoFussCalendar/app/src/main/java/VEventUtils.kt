@@ -159,6 +159,11 @@ class VEventUtils{
             return veventArray
         }
 
+        // Given a string formatted as "YYYYMMDD", return integer array [Y, M, D]
+        fun parseDateStringToIntArray(dateString: String): Array<Int> {
+            return arrayOf(dateString.slice(0..3).toInt(), dateString.slice(4..5).toInt(), dateString.slice(6..7).toInt())
+        }
+
         // Given an array of VEvent objects, create a hash map of format:
         //  "YYYYMMDD" -> Array<Array<String>>[[title, location, description, color, allDay, start, end]]
         fun createEventHashMap(vevents: Array<VEvent>): HashMap<String, Array<Array<String>>> {
@@ -175,8 +180,8 @@ class VEventUtils{
                 try {
                     dtstart = event.getPropertyValue("DTSTART")
                     dtend = event.getPropertyValue("DTSTART")
-                    dtstartParsed = arrayOf(dtstart.slice(0..3).toInt(), dtstart.slice(4..5).toInt(), dtstart.slice(6..7).toInt())
-                    dtendParsed = arrayOf(dtend.slice(0..3).toInt(), dtend.slice(4..5).toInt(), dtend.slice(6..7).toInt())
+                    dtstartParsed = parseDateStringToIntArray(dtstart)
+                    dtendParsed = parseDateStringToIntArray(dtend)
                 } catch (e: EventPropertyNotFoundException) {continue}
 
                 // Create common base array
@@ -190,7 +195,7 @@ class VEventUtils{
                 // For each day in event range, create full array and add to hash map
                 if (!dtstart.contains('T', ignoreCase = true) || !dtend.contains('T', ignoreCase = true)) {  // event is allDay
 //                    println("ALLDAY")
-                    for (day in (0..<dayRange.size)) {
+                    for (day in dayRange.indices) {
                         val y: Int = dayRange[day][0]; val m: Int = dayRange[day][1]; val d: Int = dayRange[day][2]
                         val ymd = "${y}${m.toString().padStart(2, '0')}${d.toString().padStart(2, '0')}"
 
@@ -210,7 +215,7 @@ class VEventUtils{
                     }
                 } else {  // event is not allDay
 //                    println("NOTALLDAY from 0 to ${dayRange.size-1}")
-                    for (day in (0..<dayRange.size)) {
+                    for (day in dayRange.indices) {
                         val y: Int = dayRange[day][0]; val m: Int = dayRange[day][1]; val d: Int = dayRange[day][2]
                         val ymd = "${y}${m.toString().padStart(2, '0')}${d.toString().padStart(2, '0')}"
 
@@ -239,22 +244,8 @@ class VEventUtils{
                     }
                 }
 
-                // TODO:
-                //  if 'T' not in start or end date, allDay = yes
-                //  if allDay = yes
-                //    for all days between start and end (not including end)
-                //      currArray2 = currArray1
-                //      currArray2 += "yes"
-                //      currArray2 += ""
-                //      currArray2 += ""
-                //      add currArray2 to eventHashMap[day] (create new 2d array if necessary)
-                //  if allDay = no
-                //    for all days between start and end (including end)
-                //      currArray2 = currArray1
-                //      currArray2 += "no"
-                //      currArray2 += formatted DTSTART time past 'T' till 'Z" if first day, else formatted DTSTART date up to 'T'
-                //      currArray2 += formatted DTEND time past 'T' till 'Z' if last day, else formatted DTEND date up to 'T'
-                //      add currArray2 to eventHashMap[day] (create new 2d array if necessary)
+                // TODO: change this to process vevents into a new class that does lookup in a more intelligent way
+                //       previous implementation + pseudocode backed up in project resources folder -> previous vevent array processor.txt
 
             }
             return eventHashMap

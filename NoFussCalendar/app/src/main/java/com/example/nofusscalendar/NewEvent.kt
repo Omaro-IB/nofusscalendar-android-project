@@ -1,7 +1,9 @@
 package com.example.nofusscalendar
 import DTUtils
+import VEventUtils
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.content.Intent
 import android.os.Bundle
 import android.widget.DatePicker
 import android.widget.TimePicker
@@ -46,13 +48,14 @@ class NewEvent : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val selectedDate = intent.getStringExtra("selectedDate") ?: "19900101"
+        val parsedDate = VEventUtils.parseDateStringToIntArray(selectedDate)
         setContent {
             NoFussCalendarTheme {
                 Column {
                     // Dark space
                     Spacer(modifier= Modifier.height(60.dp).fillMaxWidth().background(colorResource(R.color.beigedark)))
-                    // Event Dialog -- TODO: Update day based on selected day
-                    EventDialog(modifier = Modifier.fillMaxHeight().fillMaxWidth().background(colorResource(R.color.beige)), 2024, 6, 25)
+                    EventDialog(modifier = Modifier.fillMaxHeight().fillMaxWidth().background(colorResource(R.color.beige)), parsedDate[0], parsedDate[1], parsedDate[2])
                 }
             }
         }
@@ -120,7 +123,7 @@ fun EventDialog(modifier: Modifier = Modifier, startYear: Int, startMonth: Int, 
         // Title & Cancel/Add buttons
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
             TextButton(
-                onClick = { /* TODO: exit activity */ }
+                onClick = { mContext.startActivity(Intent(mContext, MainActivity::class.java)) }  // exit to MainActivity
             ) {
                 Text("Cancel", color = colorResource(R.color.buttonred))
             }
