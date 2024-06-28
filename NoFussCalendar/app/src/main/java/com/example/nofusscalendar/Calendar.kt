@@ -39,7 +39,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
@@ -53,8 +52,10 @@ class Calendar : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        val uri = intent.getStringExtra("uri") ?: "No uri"
+        val icsRaw = VEventUtils.readTextFromUri(this@Calendar, uri)?: ""
+
         setContent {
-            val uri = intent.getStringExtra("uri") ?: "No uri"
             NoFussCalendarTheme {
                 Column {
                     // Dark space
@@ -69,7 +70,7 @@ class Calendar : ComponentActivity() {
                         .background(colorResource(R.color.beige))
                         .fillMaxWidth()
                         .fillMaxHeight()
-                        , uri = uri)
+                        , icsRaw = icsRaw)
                 }
             }
         }
@@ -77,9 +78,8 @@ class Calendar : ComponentActivity() {
 }
 
 @Composable
-fun Calendar(modifier: Modifier = Modifier, uri: String) {
+fun Calendar(modifier: Modifier = Modifier, icsRaw: String) {
     // ICS Parsing and Events
-    val icsRaw = VEventUtils.readTextFromUri(LocalContext.current, uri)?: ""
     if (icsRaw == "") { Text("Error reading ICS file", color = colorResource(R.color.buttonred)) }
     val events = VEventUtils.parseICS(icsRaw)  // contains all events info, easy to parse between .ics string
     val eventsHashMap = VEventUtils.createEventHashMap(events)  // hash map for quick lookup & quick display
