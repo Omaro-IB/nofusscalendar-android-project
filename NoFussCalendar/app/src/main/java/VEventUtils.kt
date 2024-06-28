@@ -162,19 +162,83 @@ class VEventUtils{
         // Given an array of VEvent objects, create a hash map of format:
         //  "YYYYMMDD" -> Array<Array<String>>[[title, location, description, color, allDay, start, end]]
         fun createEventHashMap(vevents: Array<VEvent>): HashMap<String, Array<Array<String>>> {
-            var eventHashMap = HashMap<String, Array<Array<String>>>()
+            val eventHashMap = HashMap<String, Array<Array<String>>>()
             var currArray1: Array<String> // base array, includes all common info for a given event (i.e. excluding time-relevant info)
             var currArray2: Array<String> // secondary array, includes allDay, start, and end
+            var dtstart: String // start datetime for each event
+            var dtend: String // end datetime for each event
+            var dtstartParsed: Array<Int> // start datetime for each event in [Y,M,D]
+            var dtendParsed: Array<Int> // end datetime for each event in [Y,M,D]
 
-            vevents.forEach {
+            for (event in vevents) {
+                // Start and end date-times, this is the minimum for an event to exist so if the properties are not found, skip this event
+                try {
+                    dtstart = event.getPropertyValue("DTSTART")
+                    dtend = event.getPropertyValue("DTSTART")
+                    dtstartParsed = arrayOf(dtstart.slice(0..3).toInt(), dtstart.slice(4..5).toInt(), dtstart.slice(6..7).toInt())
+                    dtendParsed = arrayOf(dtend.slice(0..3).toInt(), dtend.slice(4..5).toInt(), dtend.slice(6..7).toInt())
+                } catch (e: EventPropertyNotFoundException) {continue}
+
                 // Create common base array
                 currArray1 = arrayOf()
-                currArray1 += try { it.getPropertyValue("SUMMARY") } catch(e: EventPropertyNotFoundException) { "No Title" }
-                currArray1 += try { it.getPropertyValue("LOCATION") } catch(e: EventPropertyNotFoundException) { "No Location" }
-                currArray1 += try { it.getPropertyValue("DESCRIPTION") } catch(e: EventPropertyNotFoundException) { "No Description" }
-                currArray1 += try { it.getPropertyValue("COLOR") } catch(e: EventPropertyNotFoundException) { "No Color" }
+                currArray1 += try { event.getPropertyValue("SUMMARY") } catch(e: EventPropertyNotFoundException) { "No Teventle" }
+                currArray1 += try { event.getPropertyValue("LOCATION") } catch(e: EventPropertyNotFoundException) { "No Location" }
+                currArray1 += try { event.getPropertyValue("DESCRIPTION") } catch(e: EventPropertyNotFoundException) { "No Description" }
+                currArray1 += try { event.getPropertyValue("COLOR") } catch(e: EventPropertyNotFoundException) { "No Color" }
 
+                val dayRange = DTUtils.getDaysBetween(dtstartParsed, dtendParsed)
                 // For each day in event range, create full array and add to hash map
+                if (!dtstart.contains('T', ignoreCase = true) || !dtend.contains('T', ignoreCase = true)) {  // event is allDay
+//                    println("ALLDAY")
+                    for (day in (0..<dayRange.size)) {
+                        val y: Int = dayRange[day][0]; val m: Int = dayRange[day][1]; val d: Int = dayRange[day][2]
+                        val ymd = "${y}${m.toString().padStart(2, '0')}${d.toString().padStart(2, '0')}"
+
+                        currArray2 = currArray1
+                        currArray2 += "yes"
+                        currArray2 += ""
+                        currArray2 += ""
+                        // Add array to hash map
+                        var x = eventHashMap[ymd]
+                        if (x == null) {
+                            eventHashMap[ymd] = arrayOf(currArray2)
+//                            println("OK ALLDAY $currArray2")
+                        } else {
+                            x+= currArray2
+                            eventHashMap[ymd] = x
+                        }
+                    }
+                } else {  // event is not allDay
+//                    println("NOTALLDAY from 0 to ${dayRange.size-1}")
+                    for (day in (0..<dayRange.size)) {
+                        val y: Int = dayRange[day][0]; val m: Int = dayRange[day][1]; val d: Int = dayRange[day][2]
+                        val ymd = "${y}${m.toString().padStart(2, '0')}${d.toString().padStart(2, '0')}"
+
+                        currArray2 = currArray1
+                        currArray2 += "no"
+                        currArray2 += if (day == 0) { // first day of event - display start time (hours: minutes)
+                            DTUtils.timeToStr(dtstart.slice(9..10).toInt(), dtstart.slice(11..12).toInt())
+                        } else {  // not first day of event - display start day (month/day)
+                            "${dtstartParsed[1]}/${dtstartParsed[2]}"
+                        }
+                        currArray2 += if (day == dayRange.size-1) {  // last day of event - display end time (hours: minutes)
+                            DTUtils.timeToStr(dtend.slice(9..10).toInt(), dtend.slice(11..12).toInt())
+                        } else {    // not last day of event - display end day (month/day)
+                            "${dtendParsed[1]}/${dtendParsed[2]}"
+                        }
+//                        println("$currArray2")
+                        // Add array to hash map
+                        var x = eventHashMap[ymd]
+                        if (x == null) {
+                            eventHashMap[ymd] = arrayOf(currArray2)
+//                            println("OK NOTALLDAY $currArray2")
+                        } else {
+                            x+= currArray2
+                            eventHashMap[ymd] = x
+                        }
+                    }
+                }
+
                 // TODO:
                 //  if 'T' not in start or end date, allDay = yes
                 //  if allDay = yes
@@ -247,65 +311,17 @@ fun main() {
         PRODID:-//Simple Mobile Tools//NONSGML Event Calendar//EN
         VERSION:2.0
         BEGIN:VEVENT
-        SUMMARY:test repeating
-        UID:0bef79ee0bbb42889231bfc83995e2da1719308622568
-        X-SMT-CATEGORY-COLOR:-16746133
+        SUMMARY:Canada Flight
+        UID:2c10be6923a6429dbec43e70f6e5631a1718624251173
+        X-SMT-CATEGORY-COLOR:-8219500
         CATEGORIES:Regular event
-        LAST-MODIFIED:20240625T094342Z
+        LAST-MODIFIED:20240617T113731Z
         TRANSP:OPAQUE
-        LOCATION:a location
-        DTSTART:20240625T100000Z
-        DTEND:20240625T100000Z
+        DTSTART:20240827T235000Z
+        DTEND:20240827T235000Z
         X-SMT-MISSING-YEAR:0
-        DTSTAMP:20240625T095211Z
+        DTSTAMP:20240627T200208Z
         STATUS:CONFIRMED
-        RRULE:FREQ=MONTHLY;INTERVAL=1
-        DESCRIPTION:a description
-        END:VEVENT
-        BEGIN:VEVENT
-        SUMMARY:test multiple days
-        UID:1eec240ca8974e06a5697e0cfb5e64fd1719308647938
-        X-SMT-CATEGORY-COLOR:-16746133
-        CATEGORIES:Regular event
-        LAST-MODIFIED:20240625T094407Z
-        TRANSP:OPAQUE
-        LOCATION:a location
-        DTSTART:20240625T100000Z
-        DTEND:20240628T100000Z
-        X-SMT-MISSING-YEAR:0
-        DTSTAMP:20240625T095211Z
-        STATUS:CONFIRMED
-        DESCRIPTION:a description
-        END:VEVENT
-        BEGIN:VEVENT
-        SUMMARY:test color
-        UID:a55860012b314f3dbeb637cd98c497f41719308674366
-        X-SMT-CATEGORY-COLOR:-16746133
-        CATEGORIES:Regular event
-        LAST-MODIFIED:20240625T094434Z
-        TRANSP:OPAQUE
-        LOCATION:a location
-        DTSTART:20240625T100000Z
-        DTEND:20240625T100000Z
-        X-SMT-MISSING-YEAR:0
-        DTSTAMP:20240625T095211Z
-        STATUS:CONFIRMED
-        DESCRIPTION:a description
-        END:VEVENT
-        BEGIN:VEVENT
-        SUMMARY:test alarm
-        UID:a4036f53a80b4b609d71f4f2cd3682f01719309102774
-        X-SMT-CATEGORY-COLOR:-16746133
-        CATEGORIES:Regular event
-        LAST-MODIFIED:20240625T095142Z
-        TRANSP:OPAQUE
-        LOCATION:a location
-        DTSTART:20240625T120000Z
-        DTEND:20240625T120000Z
-        X-SMT-MISSING-YEAR:0
-        DTSTAMP:20240625T095211Z
-        STATUS:CONFIRMED
-        DESCRIPTION:a description
         BEGIN:VALARM
         DESCRIPTION:Reminder
         ACTION:DISPLAY
@@ -315,6 +331,11 @@ fun main() {
         END:VCALENDAR
     """.trimIndent()
     val parsed = VEventUtils.parseICS(ICSTest)
-    println(parsed[0].getPropertyValue("dte"))
-//    println(parsed[0].getPropertyValue("RRULE", "X"))
+    val hashMap = VEventUtils.createEventHashMap(parsed)
+    val y: Array<Array<String>> = hashMap["20240827"]?: arrayOf(arrayOf())
+    println(hashMap.keys.first())
+    println(y.size)
+    y[0].forEach {
+        println(it)
+    }
 }

@@ -1,4 +1,3 @@
-
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
@@ -30,15 +29,13 @@ class DTUtils {
         }
 
         // get all dates (in a 2D array of [[Y,M,D],...]) between two given dates (inclusive)
-        fun getDaysBetween(year1: Int, month1: Int, day1: Int, year2: Int, month2: Int, day2: Int): Array<Array<Int>> {
-            val date1 = LocalDate(year1, month1, day1)
-            val date2 = LocalDate(year2, month2, day2)
-            var date = date1
-            var y: Int; var m: Int; var d: Int
+        fun getDaysBetween(date1: Array<Int>, date2: Array<Int>): Array<Array<Int>> {
+            val date1LD = LocalDate(date1[0], date1[1], date1[2])
+            val date2LD = LocalDate(date2[0], date2[1], date2[2])
+            var date = date1LD
             var returnArray: Array<Array<Int>> = arrayOf()
-            while (date in (date1..date2)) {
-                y = date.year; m = date.monthNumber; d = date.dayOfMonth
-                returnArray += arrayOf(y, m, d)
+            while (date in (date1LD..date2LD)) {
+                returnArray += arrayOf(date.year, date.monthNumber, date.dayOfMonth)
                 date = date.plus(1, DateTimeUnit.DAY)
             }
             return returnArray

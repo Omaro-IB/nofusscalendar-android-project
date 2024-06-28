@@ -2,8 +2,8 @@ package com.example.nofusscalendar
 
 import DTUtils
 import VEventUtils
-import android.nfc.FormatException
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -131,8 +132,7 @@ fun Calendar(modifier: Modifier = Modifier, uri: String) {
             Events(modifier = Modifier
                 .background(colorResource(R.color.beige))
                 .fillMaxWidth()
-                .fillMaxHeight(), selectedYear, selectedMonth, selectedDay, eventsHashMap["${selectedYear}${selectedMonth.toString().padStart(2, '0')}${selectedDay.toString().padStart(2, '0')}"] ?: arrayOf(arrayOf())
-            )
+                .fillMaxHeight(), selectedYear, selectedMonth, selectedDay, eventsHashMap["${selectedYear}${selectedMonth.toString().padStart(2, '0')}${selectedDay.toString().padStart(2, '0')}"])
             // Add event button
             val iconSize = 96
             Box(modifier = Modifier
@@ -165,7 +165,7 @@ fun Event(title: String, location: String, description: String, color: String, a
         "blue" -> colorResource(R.color.black_css3)
         "teal" -> colorResource(R.color.teal_css3)
         "aqua" -> colorResource(R.color.aqua_css3)
-        else -> throw FormatException("color not available")
+        else -> colorResource(R.color.beige)
     }
     Row {
         // Color spacer
@@ -209,22 +209,31 @@ fun Event(title: String, location: String, description: String, color: String, a
 }
 
 @Composable
-fun Events(modifier: Modifier = Modifier, year: Int, month: Int, day: Int, eventArray: Array<Array<String>>) {
+fun Events(modifier: Modifier = Modifier, year: Int, month: Int, day: Int, eventArray: Array<Array<String>>?) {
     // Title
     Column (modifier = modifier) {
         Spacer(modifier = Modifier.height(20.dp))
         Text("Events for ${DTUtils.weekDayIntToStr(DTUtils.dateToWeekDay(year, month, day))}, $day ${DTUtils.monthIntToStr(month)} $year:", fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.height(10.dp))
 
-        if (eventArray.isEmpty()) {
+        if (eventArray == null) {
             Text("No events for this day")
         } else {
             // TODO: take eventArray [title, location, description, color, allDay, start, end] and display event
-    //      LazyColumn{
-    //          items(...) { event ->
-    //               ...
-    //          }
-    //      }
+          LazyColumn{
+              items(eventArray.size) { event ->
+                  Log.d("Calendar - eventArray", eventArray[event][3].toString())
+                  Event(
+                      title = eventArray[event][0],
+                      location = eventArray[event][1],
+                      description = eventArray[event][2],
+                      color = eventArray[event][3],
+                      allDay = eventArray[event][4],
+                      start = eventArray[event][5],
+                      end = eventArray[event][6]
+                  )
+              }
+          }
         }
     }
 }
