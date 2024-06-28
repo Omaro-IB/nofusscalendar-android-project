@@ -3,7 +3,6 @@ package com.example.nofusscalendar
 import DTUtils
 import VEventUtils
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -84,6 +83,11 @@ fun Calendar(modifier: Modifier = Modifier, uri: String) {
     if (icsRaw == "") { Text("Error reading ICS file", color = colorResource(R.color.buttonred)) }
     val events = VEventUtils.parseICS(icsRaw)  // contains all events info, easy to parse between .ics string
     val eventsHashMap = VEventUtils.createEventHashMap(events)  // hash map for quick lookup & quick display
+    MainScreen(modifier = modifier, eventsHashMap = eventsHashMap)
+}
+
+@Composable
+fun MainScreen(modifier: Modifier = Modifier, eventsHashMap: HashMap<String, Array<Array<String>>>) {
     // Displayed year/month
     var year: Int by remember { mutableStateOf(DTUtils.getYear()) }
     var month: Int by remember { mutableStateOf(DTUtils.getMonth()) }
@@ -222,7 +226,6 @@ fun Events(modifier: Modifier = Modifier, year: Int, month: Int, day: Int, event
             // TODO: take eventArray [title, location, description, color, allDay, start, end] and display event
           LazyColumn{
               items(eventArray.size) { event ->
-                  Log.d("Calendar - eventArray", eventArray[event][3].toString())
                   Event(
                       title = eventArray[event][0],
                       location = eventArray[event][1],
