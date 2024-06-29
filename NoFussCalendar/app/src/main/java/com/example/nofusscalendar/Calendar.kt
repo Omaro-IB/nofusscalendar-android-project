@@ -1,6 +1,8 @@
 package com.example.nofusscalendar
 
 import DTUtils
+import Event
+import EventLookup
 import VEventUtils
 import android.content.Intent
 import android.os.Bundle
@@ -84,12 +86,12 @@ fun Calendar(modifier: Modifier = Modifier, icsRaw: String) {
     // ICS Parsing and Events
     if (icsRaw == "") { Text("Error reading ICS file", color = colorResource(R.color.buttonred)) }
     val events = VEventUtils.parseICS(icsRaw)  // contains all events info, easy to parse between .ics string
-    val eventsHashMap = VEventUtils.createEventHashMap(events)  // hash map for quick lookup & quick display
-    MainScreen(modifier = modifier, eventsHashMap = eventsHashMap)
+    val eventLookup = EventLookup(); eventLookup.createFromVevents(events) // hash map for quick lookup & quick display
+    MainScreen(modifier = modifier, eventLookup = eventLookup)
 }
 
 @Composable
-fun MainScreen(modifier: Modifier = Modifier, eventsHashMap: HashMap<String, Array<Array<String>>>) {
+fun MainScreen(modifier: Modifier = Modifier, eventLookup: EventLookup) {
     val context = LocalContext.current
     // Displayed year/month
     var year: Int by remember { mutableStateOf(DTUtils.getYear()) }
@@ -98,12 +100,12 @@ fun MainScreen(modifier: Modifier = Modifier, eventsHashMap: HashMap<String, Arr
     var selectedYear: Int by remember { mutableStateOf(DTUtils.getYear()) }
     var selectedMonth: Int by remember { mutableStateOf(DTUtils.getMonth()) }
     var selectedDay: Int by remember { mutableStateOf(DTUtils.getDay()) }
-    // Formatted YYYYMMDD string
-    val selectedDateS = "${selectedYear}${selectedMonth.toString().padStart(2, '0')}${selectedDay.toString().padStart(2, '0')}"
-
     // Fix displayed month
     if (month > 12) {month = 1; year += 1 }
     if (month < 1) {month = 12; year -= 1}
+    // eventsHashMap for this month from lookup
+    val eventsHashMap = eventLookup.lookup(selectedYear, selectedMonth)
+
 
     Column(modifier = modifier) {
         Column(modifier = Modifier.height(400.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -141,9 +143,10 @@ fun MainScreen(modifier: Modifier = Modifier, eventsHashMap: HashMap<String, Arr
             Events(modifier = Modifier
                 .background(colorResource(R.color.beige))
                 .fillMaxWidth()
-                .fillMaxHeight(), selectedYear, selectedMonth, selectedDay, eventsHashMap[selectedDateS])
+                .fillMaxHeight(), selectedYear, selectedMonth, selectedDay, eventsHashMap[selectedDay])
             // Add event button
             val iconSize = 96
+            val selectedDateS = "${selectedYear}${selectedMonth.toString().padStart(2, '0')}${selectedDay.toString().padStart(2, '0')}"
             Box(modifier = Modifier
                 .padding(vertical = 20.dp)
                 .align(Alignment.BottomEnd)) {
@@ -158,7 +161,7 @@ fun MainScreen(modifier: Modifier = Modifier, eventsHashMap: HashMap<String, Arr
 
 
 @Composable
-fun Event(title: String, location: String, description: String, color: String, allDay: String, start: String, end: String){
+fun EventItem(title: String, location: String, description: String, color: String, start: String, end: String){
     val c = when(color){
         "black" -> colorResource(R.color.black_css3)
         "silver" -> colorResource(R.color.silver_css3)
@@ -199,14 +202,14 @@ fun Event(title: String, location: String, description: String, color: String, a
                 .fillMaxWidth()
                 .padding(end = 40.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                 Row {Text(VEventUtils.clipString(title, "..", 14), fontWeight = FontWeight.Bold); Text(" @${VEventUtils.clipString(location, "..", 14)}", fontStyle = FontStyle.Italic)}
-                Text(if (allDay == "yes") "all-day  " else (start))
+                Text(start)
             }
             // Description and end time
             Row(modifier = Modifier
                 .fillMaxWidth()
                 .padding(end = 40.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(VEventUtils.clipString(description, "...", 28), color = colorResource(R.color.gray_css3))
-                Text(if (allDay == "yes") "" else (end))
+                Text(end)
             }
             Spacer(modifier = Modifier.padding(vertical = 2.dp))
             Spacer(modifier = Modifier
@@ -220,7 +223,7 @@ fun Event(title: String, location: String, description: String, color: String, a
 }
 
 @Composable
-fun Events(modifier: Modifier = Modifier, year: Int, month: Int, day: Int, eventArray: Array<Array<String>>?) {
+fun Events(modifier: Modifier = Modifier, year: Int, month: Int, day: Int, eventArray: Array<Event>?) {
     // Title
     Column (modifier = modifier) {
         Spacer(modifier = Modifier.height(20.dp))
@@ -232,14 +235,20 @@ fun Events(modifier: Modifier = Modifier, year: Int, month: Int, day: Int, event
         } else {
           LazyColumn{
               items(eventArray.size) { event ->
-                  Event(
-                      title = eventArray[event][0],
-                      location = eventArray[event][1],
-                      description = eventArray[event][2],
-                      color = eventArray[event][3],
-                      allDay = eventArray[event][4],
-                      start = eventArray[event][5],
-                      end = eventArray[event][6]
+                  val startDate = eventArray[event].startDate
+                  val endDate = eventArray[event].endDate
+                  var startTime = eventArray[event].startTime
+                  var endTime = eventArray[event].endTime
+                  if (startDate.day != day || startDate.month != month || startDate.year != year) {startTime += " (${DTUtils.monthIntToStr(startDate.month, short = true)} ${startDate.day})"}  // this event does not start on selected day
+                  if (endDate.day != day || endDate.month != month || endDate.year != year) {endTime += " (${DTUtils.monthIntToStr(endDate.month, short = true)} ${endDate.day})"}  // this event does not end on selected day
+
+                  EventItem(
+                      title = eventArray[event].title,
+                      location = eventArray[event].location,
+                      description = eventArray[event].description,
+                      color = eventArray[event].color,
+                      start = startTime,
+                      end = endTime
                   )
               }
           }

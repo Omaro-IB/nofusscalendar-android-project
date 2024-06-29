@@ -1,6 +1,5 @@
 package com.example.nofusscalendar
 import DTUtils
-import VEventUtils
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Intent
@@ -49,7 +48,7 @@ class NewEvent : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val selectedDate = intent.getStringExtra("selectedDate") ?: "19900101"
-        val parsedDate = VEventUtils.parseDateStringToIntArray(selectedDate)
+        val parsedDate = DTUtils.parseDateStringToIntArray(selectedDate)
         setContent {
             NoFussCalendarTheme {
                 Column {

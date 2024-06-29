@@ -139,5 +139,15 @@ class DTUtils {
                 return "$nHour:${minute.toString().padStart(2, '0')} $ending"
             }
         }
+
+        // Given a string formatted as "YYYYMMDD", return integer array [Y, M, D]
+        fun parseDateStringToIntArray(dateString: String): Array<Int> {
+            return arrayOf(dateString.slice(0..3).toInt(), dateString.slice(4..5).toInt(), dateString.slice(6..7).toInt())
+        }
     }
+}
+
+
+fun main() {
+    println(DTUtils.getDaysBetween(arrayOf(2024, 2, 29), arrayOf(2024, 3, 2)))
 }

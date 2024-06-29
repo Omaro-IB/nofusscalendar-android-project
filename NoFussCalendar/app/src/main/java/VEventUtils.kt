@@ -5,8 +5,6 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 
-class EventPropertyNotFoundException(m: String) : Exception (m)
-
 data class Value(val label: String, val word: String) {
     override fun toString(): String {
         return "$label=$word"
@@ -65,27 +63,36 @@ data class VEvent(val properties: Array<Property>, val valarm: VAlarm?) {
         return -1
     }
 
-    fun isSingletonProperty(label: String): Boolean {
+    fun isSingletonProperty(label: String): Boolean? {
         val propertyIndex = propertyLabelToIndex(label)
-        if (propertyIndex == -1) { throw EventPropertyNotFoundException("$label property not found in event") }
+        if (propertyIndex == -1) { return null }
         return properties[propertyIndex].values.size == 1
     }
 
-    fun getPropertyValue(propertyLabel: String): String {
-        if (! isSingletonProperty(propertyLabel)) { throw IllegalArgumentException("$propertyLabel is not a singleton property but value label was not provided") }
-        val propertyIndex = propertyLabelToIndex(propertyLabel)
-        if (propertyIndex == -1) { throw EventPropertyNotFoundException("$propertyLabel property not found in event") }
+    fun getPropertyValue(propertyLabel: String): String? {
+        val isSingleton: Boolean = isSingletonProperty(propertyLabel)?: return null
+        if (!isSingleton) { throw IllegalArgumentException("$propertyLabel is not a singleton property but value label was not provided") }
 
+        val propertyIndex = propertyLabelToIndex(propertyLabel)
+        if (propertyIndex == -1) { return null }
         return properties[propertyIndex].values[0].word
     }
 
-    fun getPropertyValue(propertyLabel: String, valueLabel: String): String {
-        if (isSingletonProperty(propertyLabel)) { throw IllegalArgumentException("$propertyLabel is a singleton property but value label was provided") }
-        val propertyIndex = propertyLabelToIndex(propertyLabel)
-        if (propertyIndex == -1) { throw EventPropertyNotFoundException("$propertyLabel property not found in event") }
-        val valueIndex = properties[propertyIndex].valueLabelToIndex(valueLabel)
-        if (valueIndex == -1) { throw EventPropertyNotFoundException("$valueLabel value not found in property $propertyLabel") }
+    fun getPropertyValue(propertyLabel: String, valueLabel: String): String? {
+        val isSingleton: Boolean = isSingletonProperty(propertyLabel)?: return null
+        if (isSingleton) { throw IllegalArgumentException("$propertyLabel is a singleton property but value label was provided") }
 
+        val propertyIndex = propertyLabelToIndex(propertyLabel)
+        if (propertyIndex == -1) { return null }
+
+        val valueIndex = properties[propertyIndex].valueLabelToIndex(valueLabel)
+        if (valueIndex == -1) { return null }
+        return properties[propertyIndex].values[valueIndex].word
+    }
+
+    fun getPropertyIndexValue(propertyIndex: Int, valueLabel: String): String? {
+        val valueIndex = properties[propertyIndex].valueLabelToIndex(valueLabel)
+        if (valueIndex == -1) { return null }
         return properties[propertyIndex].values[valueIndex].word
     }
 
@@ -159,100 +166,6 @@ class VEventUtils{
             return veventArray
         }
 
-        // Given a string formatted as "YYYYMMDD", return integer array [Y, M, D]
-        fun parseDateStringToIntArray(dateString: String): Array<Int> {
-            return arrayOf(dateString.slice(0..3).toInt(), dateString.slice(4..5).toInt(), dateString.slice(6..7).toInt())
-        }
-
-        // Given an array of VEvent objects, create a hash map of format:
-        //  "YYYYMMDD" -> Array<Array<String>>[[title, location, description, color, allDay, start, end]]
-        fun createEventHashMap(vevents: Array<VEvent>): HashMap<String, Array<Array<String>>> {
-            val eventHashMap = HashMap<String, Array<Array<String>>>()
-            var currArray1: Array<String> // base array, includes all common info for a given event (i.e. excluding time-relevant info)
-            var currArray2: Array<String> // secondary array, includes allDay, start, and end
-            var dtstart: String // start datetime for each event
-            var dtend: String // end datetime for each event
-            var dtstartParsed: Array<Int> // start datetime for each event in [Y,M,D]
-            var dtendParsed: Array<Int> // end datetime for each event in [Y,M,D]
-
-            for (event in vevents) {
-                // Start and end date-times, this is the minimum for an event to exist so if the properties are not found, skip this event
-                try {
-                    dtstart = event.getPropertyValue("DTSTART")
-                    dtend = event.getPropertyValue("DTSTART")
-                    dtstartParsed = parseDateStringToIntArray(dtstart)
-                    dtendParsed = parseDateStringToIntArray(dtend)
-                } catch (e: EventPropertyNotFoundException) {continue}
-
-                // Create common base array
-                currArray1 = arrayOf()
-                currArray1 += try { event.getPropertyValue("SUMMARY") } catch(e: EventPropertyNotFoundException) { "No Teventle" }
-                currArray1 += try { event.getPropertyValue("LOCATION") } catch(e: EventPropertyNotFoundException) { "No Location" }
-                currArray1 += try { event.getPropertyValue("DESCRIPTION") } catch(e: EventPropertyNotFoundException) { "No Description" }
-                currArray1 += try { event.getPropertyValue("COLOR") } catch(e: EventPropertyNotFoundException) { "No Color" }
-
-                val dayRange = DTUtils.getDaysBetween(dtstartParsed, dtendParsed)
-                // For each day in event range, create full array and add to hash map
-                if (!dtstart.contains('T', ignoreCase = true) || !dtend.contains('T', ignoreCase = true)) {  // event is allDay
-//                    println("ALLDAY")
-                    for (day in dayRange.indices) {
-                        val y: Int = dayRange[day][0]; val m: Int = dayRange[day][1]; val d: Int = dayRange[day][2]
-                        val ymd = "${y}${m.toString().padStart(2, '0')}${d.toString().padStart(2, '0')}"
-
-                        currArray2 = currArray1
-                        currArray2 += "yes"
-                        currArray2 += ""
-                        currArray2 += ""
-                        // Add array to hash map
-                        var x = eventHashMap[ymd]
-                        if (x == null) {
-                            eventHashMap[ymd] = arrayOf(currArray2)
-//                            println("OK ALLDAY $currArray2")
-                        } else {
-                            x+= currArray2
-                            eventHashMap[ymd] = x
-                        }
-                    }
-                } else {  // event is not allDay
-//                    println("NOTALLDAY from 0 to ${dayRange.size-1}")
-                    for (day in dayRange.indices) {
-                        val y: Int = dayRange[day][0]; val m: Int = dayRange[day][1]; val d: Int = dayRange[day][2]
-                        val ymd = "${y}${m.toString().padStart(2, '0')}${d.toString().padStart(2, '0')}"
-
-                        currArray2 = currArray1
-                        currArray2 += "no"
-                        currArray2 += if (day == 0) { // first day of event - display start time (hours: minutes)
-                            DTUtils.timeToStr(dtstart.slice(9..10).toInt(), dtstart.slice(11..12).toInt())
-                        } else {  // not first day of event - display start day (month/day)
-                            "${dtstartParsed[1]}/${dtstartParsed[2]}"
-                        }
-                        currArray2 += if (day == dayRange.size-1) {  // last day of event - display end time (hours: minutes)
-                            DTUtils.timeToStr(dtend.slice(9..10).toInt(), dtend.slice(11..12).toInt())
-                        } else {    // not last day of event - display end day (month/day)
-                            "${dtendParsed[1]}/${dtendParsed[2]}"
-                        }
-//                        println("$currArray2")
-                        // Add array to hash map
-                        var x = eventHashMap[ymd]
-                        if (x == null) {
-                            eventHashMap[ymd] = arrayOf(currArray2)
-//                            println("OK NOTALLDAY $currArray2")
-                        } else {
-                            x+= currArray2
-                            eventHashMap[ymd] = x
-                        }
-                    }
-                }
-
-                // TODO: change this to process vevents into a new class that does lookup in a more intelligent way
-                //       previous implementation + pseudocode backed up in project resources folder -> previous vevent array processor.txt
-
-            }
-            return eventHashMap
-        }
-            
-
-
         // Given an array of VEvent objects, create a .ics formatted string
         fun createICS(vevents: Array<VEvent>): String {
             var string = """
@@ -302,17 +215,128 @@ fun main() {
         PRODID:-//Simple Mobile Tools//NONSGML Event Calendar//EN
         VERSION:2.0
         BEGIN:VEVENT
-        SUMMARY:Canada Flight
-        UID:2c10be6923a6429dbec43e70f6e5631a1718624251173
+        SUMMARY:one-time single-day all-day
+        UID:e51ef96994f94ea3bcf1de4297eafcdb1719659892738
         X-SMT-CATEGORY-COLOR:-8219500
         CATEGORIES:Regular event
-        LAST-MODIFIED:20240617T113731Z
+        LAST-MODIFIED:20240629T112017Z
         TRANSP:OPAQUE
-        DTSTART:20240827T235000Z
-        DTEND:20240827T235000Z
+        DTSTART;VALUE=DATE:20240701
+        DTEND;VALUE=DATE:20240702
         X-SMT-MISSING-YEAR:0
-        DTSTAMP:20240627T200208Z
+        DTSTAMP:20240629T112530Z
         STATUS:CONFIRMED
+        BEGIN:VALARM
+        DESCRIPTION:Reminder
+        ACTION:DISPLAY
+        TRIGGER:-P0DT0H10M0S
+        END:VALARM
+        END:VEVENT
+        BEGIN:VEVENT
+        SUMMARY:one-time multi-day all-day
+        UID:2ff2bf153c5344629433196df0fb22db1719659924934
+        X-SMT-CATEGORY-COLOR:-8219500
+        CATEGORIES:Regular event
+        LAST-MODIFIED:20240629T112023Z
+        TRANSP:OPAQUE
+        DTSTART;VALUE=DATE:20240702
+        DTEND;VALUE=DATE:20240704
+        X-SMT-MISSING-YEAR:0
+        DTSTAMP:20240629T112530Z
+        STATUS:CONFIRMED
+        BEGIN:VALARM
+        DESCRIPTION:Reminder
+        ACTION:DISPLAY
+        TRIGGER:-P0DT0H10M0S
+        END:VALARM
+        END:VEVENT
+        BEGIN:VEVENT
+        SUMMARY:one-time single-day start/end
+        UID:d1f6a0c17e8f4f63a6481107666cb7bd1719659962716
+        X-SMT-CATEGORY-COLOR:-8219500
+        CATEGORIES:Regular event
+        LAST-MODIFIED:20240629T112031Z
+        TRANSP:OPAQUE
+        DTSTART:20240704T020000Z
+        DTEND:20240704T140000Z
+        X-SMT-MISSING-YEAR:0
+        DTSTAMP:20240629T112530Z
+        STATUS:CONFIRMED
+        BEGIN:VALARM
+        DESCRIPTION:Reminder
+        ACTION:DISPLAY
+        TRIGGER:-P0DT0H10M0S
+        END:VALARM
+        END:VEVENT
+        BEGIN:VEVENT
+        SUMMARY:one-time multi-day start/end
+        UID:c9c335bf09f94f0ebb5dfe0fa29077051719659992056
+        X-SMT-CATEGORY-COLOR:-8219500
+        CATEGORIES:Regular event
+        LAST-MODIFIED:20240629T112043Z
+        TRANSP:OPAQUE
+        DTSTART:20240705T020000Z
+        DTEND:20240706T140000Z
+        X-SMT-MISSING-YEAR:0
+        DTSTAMP:20240629T112530Z
+        STATUS:CONFIRMED
+        BEGIN:VALARM
+        DESCRIPTION:Reminder
+        ACTION:DISPLAY
+        TRIGGER:-P0DT0H10M0S
+        END:VALARM
+        END:VEVENT
+        BEGIN:VEVENT
+        SUMMARY:repeating every 2 days
+        UID:b2ab4b0137224e2f86876a04524f3e0b1719660095446
+        X-SMT-CATEGORY-COLOR:-8219500
+        CATEGORIES:Regular event
+        LAST-MODIFIED:20240629T112436Z
+        TRANSP:OPAQUE
+        DTSTART:20240707T120000Z
+        DTEND:20240707T120000Z
+        X-SMT-MISSING-YEAR:0
+        DTSTAMP:20240629T112530Z
+        STATUS:CONFIRMED
+        RRULE:FREQ=DAILY;INTERVAL=2
+        BEGIN:VALARM
+        DESCRIPTION:Reminder
+        ACTION:DISPLAY
+        TRIGGER:-P0DT0H10M0S
+        END:VALARM
+        END:VEVENT
+        BEGIN:VEVENT
+        SUMMARY:repeating every 2 weeks till august 1
+        UID:c9f04ce566d549b7b3fc2ed03aec1f9a1719660221653
+        X-SMT-CATEGORY-COLOR:-8219500
+        CATEGORIES:Regular event
+        LAST-MODIFIED:20240629T112455Z
+        TRANSP:OPAQUE
+        DTSTART:20240707T120000Z
+        DTEND:20240707T120000Z
+        X-SMT-MISSING-YEAR:0
+        DTSTAMP:20240629T112530Z
+        STATUS:CONFIRMED
+        RRULE:FREQ=WEEKLY;INTERVAL=2;UNTIL=20240801T195959Z;BYDAY=SU
+        BEGIN:VALARM
+        DESCRIPTION:Reminder
+        ACTION:DISPLAY
+        TRIGGER:-P0DT0H10M0S
+        END:VALARM
+        END:VEVENT
+        BEGIN:VEVENT
+        SUMMARY:repeating every 2 weeks 4 occurences
+        UID:e1cbcacd35ea43d0a7ed234ba64484f11719660260711
+        X-SMT-CATEGORY-COLOR:-8219500
+        CATEGORIES:Regular event
+        LAST-MODIFIED:20240629T112420Z
+        TRANSP:OPAQUE
+        DTSTART:20240707T120000Z
+        DTEND:20240707T120000Z
+        X-SMT-MISSING-YEAR:0
+        DTSTAMP:20240629T112530Z
+        STATUS:CONFIRMED
+        RRULE:FREQ=WEEKLY;INTERVAL=2;COUNT=4;BYDAY=SU
         BEGIN:VALARM
         DESCRIPTION:Reminder
         ACTION:DISPLAY
@@ -322,11 +346,25 @@ fun main() {
         END:VCALENDAR
     """.trimIndent()
     val parsed = VEventUtils.parseICS(ICSTest)
-    val hashMap = VEventUtils.createEventHashMap(parsed)
-    val y: Array<Array<String>> = hashMap["20240827"]?: arrayOf(arrayOf())
-    println(hashMap.keys.first())
-    println(y.size)
-    y[0].forEach {
-        println(it)
+    parsed.forEach {
+        println()
+        println(it.getPropertyValue("SUMMARY"))
+        println(it.getPropertyValue("DTSTART"))
+        println(it.getPropertyValue("DTEND"))
+        println("RRULE:")
+        println(it.getPropertyValue("RRULE", "FREQ"))
+        println(it.getPropertyValue("RRULE", "INTERVAL"))
+        println(it.getPropertyValue("RRULE", "BYDAY"))
+        println(it.getPropertyValue("RRULE", "BYMONTH"))
+        println(it.getPropertyValue("RRULE", "UNTIl"))
+        println(it.getPropertyValue("RRULE", "COUNT"))
+
     }
+//    val hashMap = VEventUtils.createEventHashMap(parsed)
+//    val y: Array<Array<String>> = hashMap["20240827"]?: arrayOf(arrayOf())
+//    println(hashMap.keys.first())
+//    println(y.size)
+//    y[0].forEach {
+//        println(it)
+//    }
 }
