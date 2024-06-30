@@ -8,16 +8,21 @@ data class RRule(val frequency: Frequency, val interval: Int = 1, val byWhat: By
 
 data class Event(val title: String, val color: String, val description: String, val location: String, val startTime: String, val endTime: String,
                  val startDate: Date, val endDate: Date, val rrule: RRule?): Comparable<Event> {
-    val finalDate: Date? = if (rrule == null) {endDate} else {
-        when (rrule.untilWhat) {
-            null -> {null}  // no limit,
-            UntilWhat.DATE -> {  // set date hard limit
-                DTUtils.parseDateStringToDate(rrule.untilVal?: throw InvalidEventException("UNTIL (date) specified but no date"))
+    val finalDate: Date? =
+        if (rrule == null) {endDate}  // no repeating rule, finalDate is end date
+        else {
+            when (rrule.untilWhat) {
+                null -> {null}  // no limit, finalDate is infinity
+                UntilWhat.DATE -> {  // date hard limit, finalDate is until date
+                    DTUtils.parseDateStringToDate(rrule.untilVal?: throw InvalidEventException("UNTIL (date) specified but no date"))
+                }
+                UntilWhat.OCCURRENCES -> {  // x number of occurrences limit, finalDate is endDate + frequency * occurrences
+                    val finalDate_ = endDate
+                    val timeUnit_ = when(rrule.frequency) {Frequency.YEARLY -> TimeUnit.YEAR; Frequency.MONTHLY -> TimeUnit.MONTH; Frequency.WEEKLY -> TimeUnit.WEEK; Frequency.DAILY -> TimeUnit.DAY}
+                    finalDate_.changeDate(timeUnit_, (rrule.untilVal?: throw InvalidEventException("COUNT (occurrences) specified but no occurrences")).toInt())
+                    finalDate_
+                }
             }
-            else -> {  // x number of occurrences limit
-                Date(1,1,1)  // TODO: endDate + rrule.frequency * rrule.untilVal
-            }
-        }
     }
 
     override fun compareTo(other: Event): Int {
