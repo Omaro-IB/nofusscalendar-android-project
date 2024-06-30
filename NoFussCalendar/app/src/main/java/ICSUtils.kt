@@ -1,3 +1,8 @@
+/*
+ * ICSUtils
+ * Use ICSUtils companion methods to read and parse a .ics file / write from VEvent to .ics
+ * The plaintext is parsed into a VEvent object, which can return property values
+ */
 
 import android.content.Context
 import android.net.Uri
@@ -6,12 +11,29 @@ import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 
 data class Value(val label: String, val word: String) {
+    /**
+     * Represents a single value (ex. FREQ=MONTHLY)
+     */
     override fun toString(): String {
         return "$label=$word"
     }
 }
 
 data class Property(val label: String, val values: Array<Value>) {
+    /**
+     * Represents a property, which can contain 1 or more values
+     * Ex. 1 value) SUMMARY:A birthday
+     * Ex. > 1 value) RRULE:FREQ=MONTHLY;INTERVAL=1
+     */
+    fun valueLabelToIndex(label: String): Int {
+        var index = 0
+        for (value in values) {
+            if (value.label.contains(label, ignoreCase = true)) { return index }
+            index += 1
+        }
+        return -1
+    }
+
     override fun toString(): String {
         if (values.size == 1) { return "$label:${values[0].word}" }
         else {
@@ -22,18 +44,12 @@ data class Property(val label: String, val values: Array<Value>) {
             return string.slice(0..<(string.length-1))
         }
     }
-
-    fun valueLabelToIndex(label: String): Int {
-        var index = 0
-        for (value in values) {
-            if (value.label.contains(label, ignoreCase = true)) { return index }
-            index += 1
-        }
-        return -1
-    }
 }
 
 data class VAlarm(val days: Int, val hours: Int, val minutes: Int, val seconds: Int) {
+    /**
+     * Represents a VAlarm, which specifies how long before the event the user should be notified
+     */
     override fun toString(): String {
         return """
             BEGIN:VALARM
@@ -46,6 +62,10 @@ data class VAlarm(val days: Int, val hours: Int, val minutes: Int, val seconds: 
 }
 
 data class VEvent(val properties: Array<Property>, val valarm: VAlarm?) {
+    /**
+     * Main VEvent object
+     * Contains multiple properties and optionally a VAlarm
+     */
     override fun toString(): String {
         var string = "BEGIN:VEVENT"
         for (property in properties) {string += "\n$property"}
@@ -101,8 +121,10 @@ data class VEvent(val properties: Array<Property>, val valarm: VAlarm?) {
 
 class ICSUtils{
     companion object{
-        // Given a .ics format string, parse into an array of VEvent objects
         fun parseICS(ics: String): Array<VEvent> {
+            /*
+            Given a .ics format string, parse into an array of VEvent objects
+             */
             val lines = ics.lines()
             var veventArray: Array<VEvent> = arrayOf()
 

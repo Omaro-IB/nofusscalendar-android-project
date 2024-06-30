@@ -96,16 +96,6 @@ fun Calendar(modifier: Modifier = Modifier, icsRaw: String) {
 @Composable
 fun MainScreen(modifier: Modifier = Modifier, eventLookup: EventLookup) {
     val context = LocalContext.current
-    // Displayed year/month
-//    var year: Int by remember { mutableStateOf(DTUtils.getYear()) }
-//    var month: Int by remember { mutableStateOf(DTUtils.getMonth()) }
-//    // Selected year/month/day
-//    var selectedYear: Int by remember { mutableStateOf(DTUtils.getYear()) }
-//    var selectedMonth: Int by remember { mutableStateOf(DTUtils.getMonth()) }
-//    var selectedDay: Int by remember { mutableStateOf(DTUtils.getDay()) }
-//    // Fix displayed month
-//    if (month > 12) {month = 1; year += 1 }
-//    if (month < 1) {month = 12; year -= 1}
 
     // Displayed date
     var displayedDate: Date by remember { mutableStateOf(DTUtils.getNow()) }

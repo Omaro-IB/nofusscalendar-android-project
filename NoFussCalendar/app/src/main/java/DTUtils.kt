@@ -1,7 +1,11 @@
+/*
+ * DTUtils
+ * Use Date object as high level API to kotlinx.datetime
+ * Useful for Calendar operations, keeping code consistent, readable, and concise
+ */
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DatePeriod
-import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -15,52 +19,93 @@ enum class TimeUnit {YEAR, MONTH, WEEK, DAY}
 enum class DateFormat {DAYMONTHYEARSHORT, DAYMONTHYEARLONG, MONTHYEARSHORT, MONTHYEARLONG, FULLSHORT, FULLLONG, YYYYMMDD, ISO}
 
 data class Date(private val year: Int, private val month: Int, private val day: Int) {
+    /**
+     * Creates Date object corresponding to the given [year], [month], and [day]
+     * Encapsulates [LocalDate] from kotlinx.datetime
+     */
     private var dateYear = year
     private var dateMonth = month
     private var dateDay = day
     private var dateObject = LocalDate(year, month, day)
 
+    private fun synchronizeIntegers() { dateYear = dateObject.year; dateMonth = dateObject.monthNumber; dateDay = dateObject.dayOfMonth }
+    private fun synchronizeDate() { dateObject = LocalDate(dateYear, dateMonth, dateDay) }
+
     fun changeDate(timeUnit: TimeUnit, amount: Int) {
+        /**
+         * Change date by a given [timeUnit] [amount]
+         * [timeUnit]: TimeUnit.YEAR, TimeUnit.MONTH, TimeUnit.WEEK, TimeUnit.DAY
+         * [amount]: Int specifying number of [timeUnit]s
+         */
         when (timeUnit) {
             TimeUnit.YEAR -> {val period = DatePeriod(years = amount); dateObject = dateObject.plus(period)}
             TimeUnit.MONTH -> {val period = DatePeriod(months = amount); dateObject = dateObject.plus(period)}
             TimeUnit.WEEK -> {val period = DatePeriod(days = 7*amount); dateObject = dateObject.plus(period)}
             TimeUnit.DAY -> {val period = DatePeriod(days = amount); dateObject = dateObject.plus(period)}
         }
+        synchronizeIntegers()
 
     }
 
+    /**
+     * Get methods; use to manually find integer year/month/day values
+     */
+    fun getYear(): Int { return dateYear }
+    fun getMonthOfYear(): Int { return dateMonth }
+    fun getDayOfMonth(): Int { return dateDay }
+
+    /**
+     * Set methods; use to manually set integer year/month/day values
+     */
+    fun setYear(year: Int) { dateYear = year; synchronizeDate() }
+    fun setMonthOfYear(month: Int) { dateMonth = month; synchronizeDate() }
+    fun setDayOfMonth(day: Int) { dateDay = day; synchronizeDate() }
+
     fun getDayOfWeek(): Int {
+        /**
+         * Get the current date's day of week as integer
+         * Sunday = 1, Saturday = 7, etc.
+         */
         return when(val wd = dateObject.dayOfWeek.isoDayNumber){
             7 -> 1
             else -> wd + 1
         }
     }
 
-    fun getYear(): Int { return dateYear }
-    fun getMonthOfYear(): Int { return dateMonth }
-    fun getDayOfMonth(): Int { return dateDay }
-
-    fun setYear(year: Int) { dateYear = year }
-    fun setMonthOfYear(month: Int) { dateMonth = month }
-    fun setDayOfMonth(day: Int) { dateDay = day }
-
     fun getDayOfWeekOfFirstOfMonth(): Int {
-        return when(val wd = LocalDate(year, month, 1).dayOfWeek.isoDayNumber){
+        /**
+         * Get the current date's month's first day's day of week as integer
+         * Sunday = 1, Saturday = 7, etc.
+         */
+        return when(val wd = LocalDate(dateYear, dateMonth, 1).dayOfWeek.isoDayNumber){
             7 -> 1
             else -> wd + 1
         }
     }
 
     fun getNumDaysOfMonth(): Int {
-        val x = LocalDate(year, month, 1)
-        return when(month){
-            12 -> x.daysUntil(LocalDate(year+1, 1, 1))
-            else -> x.daysUntil(LocalDate(year, month+1, 1))
+        /**
+         * Get the number of days in the current date's month'
+         */
+        val x = LocalDate(dateYear, dateMonth, 1)
+        return when(dateMonth){
+            12 -> x.daysUntil(LocalDate(dateYear+1, 1, 1))
+            else -> x.daysUntil(LocalDate(dateYear, dateMonth+1, 1))
         }
     }
 
     fun formatAsString(format: DateFormat): String {
+        /**
+         * Format as string, specify format using [format]: [DateFormat]
+         * [DateFormat.DAYMONTHYEARLONG] -> January 1 2001
+         * [DateFormat.DAYMONTHYEARSHORT] -> Jan 1 2001
+         * [DateFormat.MONTHYEARLONG] -> January 2001
+         * [DateFormat.MONTHYEARSHORT] -> Jan 2001
+         * [DateFormat.FULLLONG] -> Monday, 1 January 2001
+         * [DateFormat.FULLSHORT] -> Monday, 1 Jan 2001
+         * [DateFormat.YYYYMMDD] -> 20010101
+         * [DateFormat.ISO] -> 2001-01-01
+         */
         return when(format) {
             DateFormat.DAYMONTHYEARLONG -> "${DTUtils.monthIntToStr(dateMonth)} $dateDay $dateYear"
             DateFormat.DAYMONTHYEARSHORT -> "${DTUtils.monthIntToStr(dateMonth, short = true)} $dateDay $dateYear"
@@ -94,22 +139,7 @@ data class Date(private val year: Int, private val month: Int, private val day: 
 
 class DTUtils {
     companion object {
-        // get number of days in a given month/year
-
-        // get all dates (in a 2D array of [[Y,M,D],...]) between two given dates (inclusive)
-        fun getDaysBetween(date1: Array<Int>, date2: Array<Int>): Array<Array<Int>> {
-            val date1LD = LocalDate(date1[0], date1[1], date1[2])
-            val date2LD = LocalDate(date2[0], date2[1], date2[2])
-            var date = date1LD
-            var returnArray: Array<Array<Int>> = arrayOf()
-            while (date in (date1LD..date2LD)) {
-                returnArray += arrayOf(date.year, date.monthNumber, date.dayOfMonth)
-                date = date.plus(1, DateTimeUnit.DAY)
-            }
-            return returnArray
-        }
-
-        // get current LocalDateTime
+        // get current Date in system time timezone
         fun getNow(): Date{
             val currentMoment: Instant = Clock.System.now()
             val dateTZ: LocalDateTime = currentMoment.toLocalDateTime(TimeZone.currentSystemDefault())
