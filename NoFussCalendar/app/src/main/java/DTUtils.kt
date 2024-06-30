@@ -94,6 +94,38 @@ data class Date(private val year: Int, private val month: Int, private val day: 
         }
     }
 
+    fun subtractDays(other: Date): Int {
+        /**
+         * Find difference this date - other date
+         * (+ve if this date is later, -ve if this date is earlier)
+         */
+        return other.dateObject.daysUntil(dateObject)
+    }
+
+    fun isPastDate(other: Date): Boolean {
+        /**
+         * return true if this date is past other date, false otherwise
+         */
+        return subtractDays(other) > 0
+    }
+
+    fun isBeforeNextMonth(year: Int, month: Int): Boolean {
+        /**
+         * return true if this date is before start of next given year/month
+         */
+        val startOfMonth = LocalDate(year, month, 1).plus(DatePeriod(months = 1))
+        return dateObject.daysUntil(startOfMonth) > 0
+    }
+
+    fun isInMonth(year: Int, month: Int): Boolean {
+        /**
+         * return true if this date is in given year/month
+         */
+        val startOfMonth = LocalDate(year, month, 1)
+        val endOfMonth = LocalDate(year, month+1, 1).plus(DatePeriod(days = -1))
+        return dateObject.daysUntil(startOfMonth) <= 0 && dateObject.daysUntil(endOfMonth) >= 0
+    }
+
     fun formatAsString(format: DateFormat): String {
         /**
          * Format as string, specify format using [format]: [DateFormat]
@@ -229,3 +261,4 @@ class DTUtils {
         }
     }
 }
+

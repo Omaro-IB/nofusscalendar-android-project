@@ -41,20 +41,34 @@ data class Event(val title: String, val color: String, val description: String, 
         /**
          * Given a [year] and [month], return all days as [Array<Int>] this event occurs in
          */
-        TODO("Not yet implemented")
-        // TODO: get all occurrences within a given month using rrules (return array of days in month as integer)
-        //          set currentDate = startDate
-        //          initialize days array
-        //          while currentDate is (before or = finalDate && before start of next month):
-        //              if currentDate is in the month: add currentDate to days array
-        //              increase currentDate using increase date methods and rrule frequency/interval
-        //                  NOTE: make sure date actually exists in this year and month. If not, keep going back 1 day until it does
+        var daysArray: Array<Int> = arrayOf()
+
+        val currentDate = startDate
+        fun notPastFinal(): Boolean {
+            return if (finalDate == null) { false }   // impossible to be past an infinite date
+            else { !currentDate.isPastDate(finalDate) }
+        }
+
+        // Iterate from event start date till final date/next month (whichever is first)
+        while (notPastFinal() && currentDate.isBeforeNextMonth(year, month)) {
+            if (currentDate.isInMonth(year, month)) {daysArray += currentDate.getDayOfMonth()}  // add day of month if within the month we're checking
+
+            if (rrule != null) {  // repeating event, increase currentDate according to rrule
+                val timeUnit_ = when(rrule.frequency) {Frequency.YEARLY -> TimeUnit.YEAR; Frequency.MONTHLY -> TimeUnit.MONTH; Frequency.WEEKLY -> TimeUnit.WEEK; Frequency.DAILY -> TimeUnit.DAY}
+                currentDate.changeDate(timeUnit_, rrule.interval)  // increase current date according to rrule
+            } else {  // not-repeating event, increase by 1 day
+                currentDate.changeDate(TimeUnit.DAY, 1)
+            }
+        }
+
+        return daysArray
     }
 
     override fun compareTo(other: Event): Int {
-        TODO("Not yet implemented")
-        // TODO: return other event's final date - this event's final date (difference in days)
-        //       NOTE: finalDate = null  means no final date
+        return if (finalDate == null && other.finalDate == null) {0}  // both final dates are infinity
+        else if (finalDate == null) {Int.MAX_VALUE}  // this final date is infinity, other is limited
+        else if (other.finalDate == null) {Int.MIN_VALUE} // this final date is limited, other is infinity
+        else {finalDate.subtractDays(other.finalDate) }  // both final dates are limited
     }
 }
 
@@ -72,13 +86,17 @@ class EventLookup {
          * Return a hash map; keys are days of month as integers
          *                    values are [Array<Event>] of all events in lookup table that appear in this day of month/year
          */
+        val returnMap = HashMap<Int, Array<Event>>()
+
+        // Binary search to find first event in lookupTable with final date after/on first of this month
         TODO()
-        // TODO: lookup from lookupTable by
-        //          1) initialize empty hash map
-        //          2) use binary search to find first event with finalDate after/on first of this month
-        //          3) for all events that come after (+including said event):
-        //              * for all days in event.getAllDaysInMonth(year, month):
-        //              *   add to hash map: key = day, value = the event
+        // Binary search to find first event in lookupTable with final date after/on first of this month
+
+        // TODO: for all events that come after (+ including) event found by binary search
+        //          for all days in event.getAllOccurrencesInMonth(year, month):
+        //              add to hash map: key = day, value = the event
+
+        return returnMap
     }
 
     fun createFromVevents(vevents: Array<VEvent>) {
@@ -163,6 +181,7 @@ class EventLookup {
             // Add event to table
             lookupTable += Event(title, color, description, location, startTime, endTime, startDate, endDate, rrule)
         }
-        // TODO: sort lookupTable (Event should be comparable)
+
+        lookupTable.sort()  // sort by final date for binary search
     }
 }
