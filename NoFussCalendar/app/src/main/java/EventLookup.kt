@@ -2,7 +2,7 @@
  * EventLookup
  * Use Event object to store event information (to be displayed in Events component)
  * Use EventLookup class to store a lookup table of events
- *     This lookup table can search for all events in a given month in O(log n) and return a hash
+ *     This lookup table can quickly search for all events in a given month and return a map of which events are on which days
  *     map of day of month -> all events in this day
  */
 
@@ -43,15 +43,19 @@ data class Event(val title: String, val color: String, val description: String, 
          */
         var daysArray: Array<Int> = arrayOf()
 
-        val currentDate = startDate
+        val currentDate = Date(startDate.getYear(), startDate.getMonthOfYear(), startDate.getDayOfMonth())
         fun notPastFinal(): Boolean {
-            return if (finalDate == null) { false }   // impossible to be past an infinite date
+            return if (finalDate == null) { true }   // impossible to be past an infinite date
             else { !currentDate.isPastDate(finalDate) }
         }
 
         // Iterate from event start date till final date/next month (whichever is first)
         while (notPastFinal() && currentDate.isBeforeNextMonth(year, month)) {
-            if (currentDate.isInMonth(year, month)) {daysArray += currentDate.getDayOfMonth()}  // add day of month if within the month we're checking
+            // add day of month if within the month we're checking + within date range
+            if (currentDate.isInMonth(year, month)) {
+                if (finalDate == null && currentDate.isOnOrPastDate(startDate)) {daysArray += currentDate.getDayOfMonth()}
+                else if (finalDate != null && currentDate.isBetweenDates(startDate, finalDate)) {daysArray += currentDate.getDayOfMonth()}
+            }
 
             if (rrule != null) {  // repeating event, increase currentDate according to rrule
                 val timeUnit_ = when(rrule.frequency) {Frequency.YEARLY -> TimeUnit.YEAR; Frequency.MONTHLY -> TimeUnit.MONTH; Frequency.WEEKLY -> TimeUnit.WEEK; Frequency.DAILY -> TimeUnit.DAY}
@@ -80,23 +84,32 @@ class EventLookup {
      */
     private var lookupTable: Array<Event> = arrayOf()
 
-    fun lookup(year: Int, month: Int): HashMap<Int, Array<Event>> {
+    fun lookup(year: Int, month: Int): Array<Pair<Array<Int>, Event>> {
         /**
          * Lookup all events within a given [year] and [month]
-         * Return a hash map; keys are days of month as integers
-         *                    values are [Array<Event>] of all events in lookup table that appear in this day of month/year
+         * Return an array of pairs; first pair-value is an array of integers representing days of this month
+         *                           second pair-value is an Event object for event appearing on all days in the integer array
          */
-        val returnMap = HashMap<Int, Array<Event>>()
+        var eventDayMap: Array<Pair<Array<Int>, Event>> = arrayOf()
 
-        // Binary search to find first event in lookupTable with final date after/on first of this month
-        TODO()
-        // Binary search to find first event in lookupTable with final date after/on first of this month
+        var addToMap = false
+        val firstOfMonth = Date(year, month, 1)
 
-        // TODO: for all events that come after (+ including) event found by binary search
-        //          for all days in event.getAllOccurrencesInMonth(year, month):
-        //              add to hash map: key = day, value = the event
+        fun addToMap(event: Event) {  // add event to map if it has at least one occurrence in the month
+            val allOccurrences = event.getAllOccurrencesInMonth(year, month)
+            if (allOccurrences.isNotEmpty()) {eventDayMap += Pair(allOccurrences, event)}
+        }
 
-        return returnMap
+        lookupTable.forEach {
+            if (addToMap) {
+                addToMap(it)
+            } else {
+                if (it.finalDate == null) {addToMap(it); addToMap = true}
+                else if (it.finalDate.isOnOrPastDate(firstOfMonth)) {addToMap(it); addToMap = true}
+            }
+        }
+
+        return eventDayMap
     }
 
     fun createFromVevents(vevents: Array<VEvent>) {

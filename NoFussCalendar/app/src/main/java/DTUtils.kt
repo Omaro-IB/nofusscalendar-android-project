@@ -109,6 +109,13 @@ data class Date(private val year: Int, private val month: Int, private val day: 
         return subtractDays(other) > 0
     }
 
+    fun isOnOrPastDate(other: Date): Boolean {
+        /**
+         * return true if this date is past or on other date, false otherwise
+         */
+        return subtractDays(other) >= 0
+    }
+
     fun isBeforeNextMonth(year: Int, month: Int): Boolean {
         /**
          * return true if this date is before start of next given year/month
@@ -122,8 +129,15 @@ data class Date(private val year: Int, private val month: Int, private val day: 
          * return true if this date is in given year/month
          */
         val startOfMonth = LocalDate(year, month, 1)
-        val endOfMonth = LocalDate(year, month+1, 1).plus(DatePeriod(days = -1))
+        val endOfMonth = when(month) {
+            12 -> LocalDate(year+1, 1, 1).plus(DatePeriod(days = -1))
+            else -> LocalDate(year, month+1, 1).plus(DatePeriod(days = -1))
+        }
         return dateObject.daysUntil(startOfMonth) <= 0 && dateObject.daysUntil(endOfMonth) >= 0
+    }
+
+    fun isBetweenDates(date1: Date, date2: Date): Boolean {
+        return dateObject.daysUntil(date1.dateObject) <= 0 && dateObject.daysUntil(date2.dateObject) >= 0
     }
 
     fun formatAsString(format: DateFormat): String {

@@ -9,6 +9,7 @@ import ICSUtils
 import TimeUnit
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -38,10 +39,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -96,39 +95,58 @@ fun Calendar(modifier: Modifier = Modifier, icsRaw: String) {
 @Composable
 fun MainScreen(modifier: Modifier = Modifier, eventLookup: EventLookup) {
     val context = LocalContext.current
+    val redraw = remember { mutableStateOf(0) }
 
     // Displayed date
-    var displayedDate: Date by remember { mutableStateOf(DTUtils.getNow()) }
+    val displayedDate = remember { mutableStateOf(DTUtils.getNow()) }
     // Selected date
-    var selectedDate: Date by remember { mutableStateOf(DTUtils.getNow()) }
+    val selectedDate = remember { mutableStateOf(DTUtils.getNow()) }
 
-    // eventsHashMap for this month from lookup
-    val eventsHashMap = eventLookup.lookup(selectedDate.getYear(), selectedDate.getMonthOfYear())
+    // eventsDayMap for this month from lookup
+    val eventDayMap = eventLookup.lookup(selectedDate.value.getYear(), selectedDate.value.getMonthOfYear())
+    var debugString = ""
+    var debugString2 = ""
+    // get only the events for the selected date from the map
+    var eventArray: Array<Event> = arrayOf()
+    eventDayMap.forEach {
+        if (it.first.any { it == selectedDate.value.getDayOfMonth() }) {eventArray += it.second}
+        debugString2 = ""
+        it.first.forEach { debugString2 += "$it " }
+        debugString += "$debugString2 | ${it.second}\n"
+    }
+    Log.d("Calendar - eventDayMap", debugString)
+
 
 
     Column(modifier = modifier) {
+        Text(redraw.value.toString())
+
         Column(modifier = Modifier.height(400.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             // Month changer
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
                 // Left
                 Box {
-                    IconButton(onClick = { displayedDate.changeDate(TimeUnit.YEAR, -1) }, modifier = Modifier.offset((-20).dp)){ Icon(
+                    IconButton(onClick = { displayedDate.value.changeDate(TimeUnit.YEAR, -1); redraw.value += 1 }, modifier = Modifier.offset((-20).dp)){ Icon(
                         painterResource(R.drawable.chevron_double_left), contentDescription = "Go back 1 year") }
-                    IconButton(onClick = { displayedDate.changeDate(TimeUnit.MONTH, -1) }){ Icon(painterResource(R.drawable.chevron_left), contentDescription = "Go back 1 month") }
+                    IconButton(onClick = { displayedDate.value.changeDate(TimeUnit.MONTH, -1); redraw.value += 1 }){ Icon(painterResource(R.drawable.chevron_left), contentDescription = "Go back 1 month") }
                 }
                 // Title
-                Row(modifier = Modifier.width(200.dp), horizontalArrangement = Arrangement.Center) {Text(text = displayedDate.formatAsString(DateFormat.MONTHYEARLONG), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)}
+                Row(modifier = Modifier.width(200.dp), horizontalArrangement = Arrangement.Center) {Text(text = displayedDate.value.formatAsString(DateFormat.MONTHYEARLONG), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)}
                 // Right
                 Box {
-                    IconButton(onClick = { displayedDate.changeDate(TimeUnit.MONTH, 1) }){ Icon(painterResource(R.drawable.chevron_right), contentDescription = "Go forward 1 month") }
-                    IconButton(onClick = { displayedDate.changeDate(TimeUnit.YEAR, 1) }, modifier = Modifier.offset(20.dp)){ Icon(
+                    IconButton(onClick = { displayedDate.value.changeDate(TimeUnit.MONTH, 1); redraw.value += 1 }){ Icon(painterResource(R.drawable.chevron_right), contentDescription = "Go forward 1 month") }
+                    IconButton(onClick = { displayedDate.value.changeDate(TimeUnit.YEAR, 1); redraw.value += 1 }, modifier = Modifier.offset(20.dp)){ Icon(
                         painterResource(R.drawable.chevron_double_right), contentDescription = "Go forward 1 year") }
                 }
             }
             // Month grid - display starting on first of month
-            MonthDays(startOn = displayedDate.getDayOfWeekOfFirstOfMonth(), numDays = displayedDate.getNumDaysOfMonth(),
-                selectedDay = (if (displayedDate.getYear() == selectedDate.getYear() && displayedDate.getMonthOfYear() == selectedDate.getMonthOfYear()) selectedDate.getDayOfMonth() else 0),
-                onDaySelect = {day: Int -> selectedDate.setDayOfMonth(day); selectedDate.setMonthOfYear(displayedDate.getMonthOfYear()); selectedDate.setYear(displayedDate.getYear())}) // only show selected day if on selected year/month
+            MonthDays(startOn = displayedDate.value.getDayOfWeekOfFirstOfMonth(), numDays = displayedDate.value.getNumDaysOfMonth(),
+                selectedDay = (if (displayedDate.value.getYear() == selectedDate.value.getYear() && displayedDate.value.getMonthOfYear() == selectedDate.value.getMonthOfYear()) selectedDate.value.getDayOfMonth() else 0),
+                onDaySelect = {day: Int ->
+                    selectedDate.value.setDayOfMonth(day)
+                    selectedDate.value.setMonthOfYear(displayedDate.value.getMonthOfYear())
+                    selectedDate.value.setYear(displayedDate.value.getYear())
+                    redraw.value += 1 }) // only show selected day if on selected year/month
 
         }
 
@@ -143,13 +161,13 @@ fun MainScreen(modifier: Modifier = Modifier, eventLookup: EventLookup) {
             Events(modifier = Modifier
                 .background(colorResource(R.color.beige))
                 .fillMaxWidth()
-                .fillMaxHeight(), selectedDate, eventsHashMap[selectedDate.getDayOfMonth()])
+                .fillMaxHeight(), selectedDate.value, eventArray)
             // Add event button
             val iconSize = 96
             Box(modifier = Modifier
                 .padding(vertical = 20.dp)
                 .align(Alignment.BottomEnd)) {
-                IconButton(onClick = { val intent = Intent(context, NewEvent::class.java).apply { putExtra("selectedDate", selectedDate.formatAsString(DateFormat.YYYYMMDD)) } // Start New Event activity
+                IconButton(onClick = { val intent = Intent(context, NewEvent::class.java).apply { putExtra("selectedDate", selectedDate.value.formatAsString(DateFormat.YYYYMMDD)) } // Start New Event activity
                                        context.startActivity(intent) }
                     , modifier = Modifier.size(iconSize.dp)){ Icon(
                     painterResource(R.drawable.plus_box), tint = colorResource(R.color.buttongreen), contentDescription = "Add event", modifier = Modifier.size((iconSize*0.85).dp)) }
@@ -222,14 +240,14 @@ fun EventItem(title: String, location: String, description: String, color: Strin
 }
 
 @Composable
-fun Events(modifier: Modifier = Modifier, date: Date, eventArray: Array<Event>?) {
+fun Events(modifier: Modifier = Modifier, date: Date, eventArray: Array<Event>) {
     // Title
     Column (modifier = modifier) {
         Spacer(modifier = Modifier.height(20.dp))
         Text("Events for ${date.formatAsString(DateFormat.FULLLONG)}:", fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.height(10.dp))
 
-        if (eventArray == null) {
+        if (eventArray.isEmpty()) {
             Text("No events for this day")
         } else {
           LazyColumn{
