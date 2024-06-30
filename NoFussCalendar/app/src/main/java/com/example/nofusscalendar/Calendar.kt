@@ -1,8 +1,11 @@
 package com.example.nofusscalendar
 
 import DTUtils
+import Date
+import DateFormat
 import Event
 import EventLookup
+import TimeUnit
 import VEventUtils
 import android.content.Intent
 import android.os.Bundle
@@ -94,17 +97,23 @@ fun Calendar(modifier: Modifier = Modifier, icsRaw: String) {
 fun MainScreen(modifier: Modifier = Modifier, eventLookup: EventLookup) {
     val context = LocalContext.current
     // Displayed year/month
-    var year: Int by remember { mutableStateOf(DTUtils.getYear()) }
-    var month: Int by remember { mutableStateOf(DTUtils.getMonth()) }
-    // Selected year/month/day
-    var selectedYear: Int by remember { mutableStateOf(DTUtils.getYear()) }
-    var selectedMonth: Int by remember { mutableStateOf(DTUtils.getMonth()) }
-    var selectedDay: Int by remember { mutableStateOf(DTUtils.getDay()) }
-    // Fix displayed month
-    if (month > 12) {month = 1; year += 1 }
-    if (month < 1) {month = 12; year -= 1}
+//    var year: Int by remember { mutableStateOf(DTUtils.getYear()) }
+//    var month: Int by remember { mutableStateOf(DTUtils.getMonth()) }
+//    // Selected year/month/day
+//    var selectedYear: Int by remember { mutableStateOf(DTUtils.getYear()) }
+//    var selectedMonth: Int by remember { mutableStateOf(DTUtils.getMonth()) }
+//    var selectedDay: Int by remember { mutableStateOf(DTUtils.getDay()) }
+//    // Fix displayed month
+//    if (month > 12) {month = 1; year += 1 }
+//    if (month < 1) {month = 12; year -= 1}
+
+    // Displayed date
+    var displayedDate: Date by remember { mutableStateOf(DTUtils.getNow()) }
+    // Selected date
+    var selectedDate: Date by remember { mutableStateOf(DTUtils.getNow()) }
+
     // eventsHashMap for this month from lookup
-    val eventsHashMap = eventLookup.lookup(selectedYear, selectedMonth)
+    val eventsHashMap = eventLookup.lookup(selectedDate.getYear(), selectedDate.getMonthOfYear())
 
 
     Column(modifier = modifier) {
@@ -113,22 +122,23 @@ fun MainScreen(modifier: Modifier = Modifier, eventLookup: EventLookup) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
                 // Left
                 Box {
-                    IconButton(onClick = { year-- }, modifier = Modifier.offset((-20).dp)){ Icon(
+                    IconButton(onClick = { displayedDate.changeDate(TimeUnit.YEAR, -1) }, modifier = Modifier.offset((-20).dp)){ Icon(
                         painterResource(R.drawable.chevron_double_left), contentDescription = "Go back 1 year") }
-                    IconButton(onClick = { month-- }){ Icon(painterResource(R.drawable.chevron_left), contentDescription = "Go back 1 month") }
+                    IconButton(onClick = { displayedDate.changeDate(TimeUnit.MONTH, -1) }){ Icon(painterResource(R.drawable.chevron_left), contentDescription = "Go back 1 month") }
                 }
                 // Title
-                Row(modifier = Modifier.width(200.dp), horizontalArrangement = Arrangement.Center) {Text(text = "${DTUtils.monthIntToStr(month)} $year", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)}
+                Row(modifier = Modifier.width(200.dp), horizontalArrangement = Arrangement.Center) {Text(text = displayedDate.formatAsString(DateFormat.MONTHYEARLONG), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)}
                 // Right
                 Box {
-                    IconButton(onClick = { month++ }){ Icon(painterResource(R.drawable.chevron_right), contentDescription = "Go forward 1 month") }
-                    IconButton(onClick = { year++ }, modifier = Modifier.offset(20.dp)){ Icon(
+                    IconButton(onClick = { displayedDate.changeDate(TimeUnit.MONTH, 1) }){ Icon(painterResource(R.drawable.chevron_right), contentDescription = "Go forward 1 month") }
+                    IconButton(onClick = { displayedDate.changeDate(TimeUnit.YEAR, 1) }, modifier = Modifier.offset(20.dp)){ Icon(
                         painterResource(R.drawable.chevron_double_right), contentDescription = "Go forward 1 year") }
                 }
             }
             // Month grid - display starting on first of month
-            MonthDays(startOn = DTUtils.dateToWeekDay(year, month, 1), numDays = DTUtils.getMonthDays(year, month),
-                selectedDay = (if (year == selectedYear && month == selectedMonth) selectedDay else 0), onDaySelect = {day: Int -> selectedDay = day; selectedMonth = month; selectedYear = year}) // only show selected day if on selected year/month
+            MonthDays(startOn = displayedDate.getDayOfWeekOfFirstOfMonth(), numDays = displayedDate.getNumDaysOfMonth(),
+                selectedDay = (if (displayedDate.getYear() == selectedDate.getYear() && displayedDate.getMonthOfYear() == selectedDate.getMonthOfYear()) selectedDate.getDayOfMonth() else 0),
+                onDaySelect = {day: Int -> selectedDate.setDayOfMonth(day); selectedDate.setMonthOfYear(displayedDate.getMonthOfYear()); selectedDate.setYear(displayedDate.getYear())}) // only show selected day if on selected year/month
 
         }
 
@@ -143,14 +153,13 @@ fun MainScreen(modifier: Modifier = Modifier, eventLookup: EventLookup) {
             Events(modifier = Modifier
                 .background(colorResource(R.color.beige))
                 .fillMaxWidth()
-                .fillMaxHeight(), selectedYear, selectedMonth, selectedDay, eventsHashMap[selectedDay])
+                .fillMaxHeight(), selectedDate, eventsHashMap[selectedDate.getDayOfMonth()])
             // Add event button
             val iconSize = 96
-            val selectedDateS = "${selectedYear}${selectedMonth.toString().padStart(2, '0')}${selectedDay.toString().padStart(2, '0')}"
             Box(modifier = Modifier
                 .padding(vertical = 20.dp)
                 .align(Alignment.BottomEnd)) {
-                IconButton(onClick = { val intent = Intent(context, NewEvent::class.java).apply { putExtra("selectedDate", selectedDateS) } // Start New Event activity
+                IconButton(onClick = { val intent = Intent(context, NewEvent::class.java).apply { putExtra("selectedDate", selectedDate.formatAsString(DateFormat.YYYYMMDD)) } // Start New Event activity
                                        context.startActivity(intent) }
                     , modifier = Modifier.size(iconSize.dp)){ Icon(
                     painterResource(R.drawable.plus_box), tint = colorResource(R.color.buttongreen), contentDescription = "Add event", modifier = Modifier.size((iconSize*0.85).dp)) }
@@ -223,11 +232,11 @@ fun EventItem(title: String, location: String, description: String, color: Strin
 }
 
 @Composable
-fun Events(modifier: Modifier = Modifier, year: Int, month: Int, day: Int, eventArray: Array<Event>?) {
+fun Events(modifier: Modifier = Modifier, date: Date, eventArray: Array<Event>?) {
     // Title
     Column (modifier = modifier) {
         Spacer(modifier = Modifier.height(20.dp))
-        Text("Events for ${DTUtils.weekDayIntToStr(DTUtils.dateToWeekDay(year, month, day))}, $day ${DTUtils.monthIntToStr(month)} $year:", fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.CenterHorizontally))
+        Text("Events for ${date.formatAsString(DateFormat.FULLLONG)}:", fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.height(10.dp))
 
         if (eventArray == null) {
@@ -239,8 +248,8 @@ fun Events(modifier: Modifier = Modifier, year: Int, month: Int, day: Int, event
                   val endDate = eventArray[event].endDate
                   var startTime = eventArray[event].startTime
                   var endTime = eventArray[event].endTime
-                  if (startDate.day != day || startDate.month != month || startDate.year != year) {startTime += " (${DTUtils.monthIntToStr(startDate.month, short = true)} ${startDate.day})"}  // this event does not start on selected day
-                  if (endDate.day != day || endDate.month != month || endDate.year != year) {endTime += " (${DTUtils.monthIntToStr(endDate.month, short = true)} ${endDate.day})"}  // this event does not end on selected day
+                  if (startDate != date) {startTime += " (${startDate.formatAsString(DateFormat.MONTHYEARSHORT)})"}  // this event does not start on selected day
+                  if (endDate != date) {endTime += " (${endDate.formatAsString(DateFormat.MONTHYEARLONG)})"}  // this event does not end on selected day
 
                   EventItem(
                       title = eventArray[event].title,

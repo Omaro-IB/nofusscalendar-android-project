@@ -1,5 +1,7 @@
 package com.example.nofusscalendar
 import DTUtils
+import Date
+import DateFormat
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Intent
@@ -48,13 +50,18 @@ class NewEvent : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val selectedDate = intent.getStringExtra("selectedDate") ?: "19900101"
-        val parsedDate = DTUtils.parseDateStringToIntArray(selectedDate)
         setContent {
             NoFussCalendarTheme {
                 Column {
                     // Dark space
-                    Spacer(modifier= Modifier.height(60.dp).fillMaxWidth().background(colorResource(R.color.beigedark)))
-                    EventDialog(modifier = Modifier.fillMaxHeight().fillMaxWidth().background(colorResource(R.color.beige)), parsedDate[0], parsedDate[1], parsedDate[2])
+                    Spacer(modifier= Modifier
+                        .height(60.dp)
+                        .fillMaxWidth()
+                        .background(colorResource(R.color.beigedark)))
+                    EventDialog(modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth()
+                        .background(colorResource(R.color.beige)), DTUtils.parseDateStringToDate(selectedDate))
                 }
             }
         }
@@ -62,18 +69,17 @@ class NewEvent : ComponentActivity() {
 }
 
 @Composable
-fun EventDialog(modifier: Modifier = Modifier, startYear: Int, startMonth: Int, startDay: Int) {
+fun EventDialog(modifier: Modifier = Modifier, date: Date) {
     // Fetching the Local Context
     val mContext = LocalContext.current
 
     // States
-    // End Date
-    val endYear = remember { mutableStateOf(startYear) }
-    val endMonth = remember { mutableStateOf(startMonth) }
-    val endDay = remember { mutableStateOf(startDay) }
+    // End Date/Time
+    val endDate: Date by remember { mutableStateOf(date) }
     val endHour = remember { mutableStateOf(12) }
     val endMinute = remember { mutableStateOf(0) }
-    // Start Date
+    // Start Date / Time
+    val startDate: Date by remember { mutableStateOf(date) }
     val startHour = remember { mutableStateOf(11) }
     val startMinute = remember { mutableStateOf(0) }
     // Event info
@@ -87,10 +93,10 @@ fun EventDialog(modifier: Modifier = Modifier, startYear: Int, startMonth: Int, 
     val mDatePickerDialogEnd = DatePickerDialog(
         mContext,
         { _: DatePicker, mYear: Int, mMonth: Int, mDayOfMonth: Int ->
-            endYear.value = mYear
-            endMonth.value = mMonth + 1
-            endDay.value = mDayOfMonth
-        }, startYear, startMonth-1, startDay
+            endDate.setYear(mYear)
+            endDate.setMonthOfYear(mMonth + 1)
+            endDate.setDayOfMonth(mDayOfMonth)
+        }, startDate.getYear(), startDate.getMonthOfYear()-1, startDate.getDayOfMonth()
     )
 
     // Declaring DatePickerDialog and setting -- end time
@@ -151,7 +157,7 @@ fun EventDialog(modifier: Modifier = Modifier, startYear: Int, startMonth: Int, 
             TextField(value = "Starts", onValueChange = {}, enabled = false, singleLine = true, modifier = textFieldModifier)
             Row(modifier = Modifier.offset(125.dp)){
                 OutlinedButton(onClick = { }, shape = RoundedCornerShape(5), colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.textfield)), border = BorderStroke(1.dp, colorResource(R.color.textfielddisabled))){
-                    Text("${DTUtils.monthIntToStr(startMonth, short = true)} $startDay $startYear", color = colorResource(R.color.textfielddisabled))
+                    Text(startDate.formatAsString(DateFormat.DAYMONTHYEARSHORT), color = colorResource(R.color.textfielddisabled))
                 }
                 OutlinedButton(onClick = { mTimePickerDialogStart.show() }, shape = RoundedCornerShape(5), colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.textfield)), modifier = Modifier.width(110.dp)){
                     Text(DTUtils.timeToStr(startHour.value, startMinute.value), color = colorResource(R.color.buttongreengradient))
@@ -164,7 +170,7 @@ fun EventDialog(modifier: Modifier = Modifier, startYear: Int, startMonth: Int, 
             TextField(value = "Ends", onValueChange = {}, enabled = false, singleLine = true, modifier = textFieldModifier)
             Row(modifier = Modifier.offset(125.dp)){
                 OutlinedButton(onClick = { mDatePickerDialogEnd.show() }, shape = RoundedCornerShape(5), colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.textfield))){
-                    Text("${DTUtils.monthIntToStr(endMonth.value, short = true)} ${endDay.value} ${endYear.value}", color = colorResource(R.color.buttongreengradient))
+                    Text(endDate.formatAsString(DateFormat.DAYMONTHYEARSHORT), color = colorResource(R.color.buttongreengradient))
                 }
                 OutlinedButton(onClick = { mTimePickerDialogEnd.show() }, shape = RoundedCornerShape(5), colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.textfield)), modifier = Modifier.width(110.dp)){
                     Text(DTUtils.timeToStr(endHour.value, endMinute.value), color = colorResource(R.color.buttongreengradient))

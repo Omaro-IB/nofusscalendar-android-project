@@ -1,4 +1,6 @@
+
 import kotlinx.datetime.Clock
+import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
@@ -9,24 +11,90 @@ import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 
+enum class TimeUnit {YEAR, MONTH, WEEK, DAY}
+enum class DateFormat {DAYMONTHYEARSHORT, DAYMONTHYEARLONG, MONTHYEARSHORT, MONTHYEARLONG, FULLSHORT, FULLLONG, YYYYMMDD, ISO}
+
+data class Date(private val year: Int, private val month: Int, private val day: Int) {
+    private var dateYear = year
+    private var dateMonth = month
+    private var dateDay = day
+    private var dateObject = LocalDate(year, month, day)
+
+    fun changeDate(timeUnit: TimeUnit, amount: Int) {
+        when (timeUnit) {
+            TimeUnit.YEAR -> {val period = DatePeriod(years = amount); dateObject = dateObject.plus(period)}
+            TimeUnit.MONTH -> {val period = DatePeriod(months = amount); dateObject = dateObject.plus(period)}
+            TimeUnit.WEEK -> {val period = DatePeriod(days = 7*amount); dateObject = dateObject.plus(period)}
+            TimeUnit.DAY -> {val period = DatePeriod(days = amount); dateObject = dateObject.plus(period)}
+        }
+
+    }
+
+    fun getDayOfWeek(): Int {
+        return when(val wd = dateObject.dayOfWeek.isoDayNumber){
+            7 -> 1
+            else -> wd + 1
+        }
+    }
+
+    fun getYear(): Int { return dateYear }
+    fun getMonthOfYear(): Int { return dateMonth }
+    fun getDayOfMonth(): Int { return dateDay }
+
+    fun setYear(year: Int) { dateYear = year }
+    fun setMonthOfYear(month: Int) { dateMonth = month }
+    fun setDayOfMonth(day: Int) { dateDay = day }
+
+    fun getDayOfWeekOfFirstOfMonth(): Int {
+        return when(val wd = LocalDate(year, month, 1).dayOfWeek.isoDayNumber){
+            7 -> 1
+            else -> wd + 1
+        }
+    }
+
+    fun getNumDaysOfMonth(): Int {
+        val x = LocalDate(year, month, 1)
+        return when(month){
+            12 -> x.daysUntil(LocalDate(year+1, 1, 1))
+            else -> x.daysUntil(LocalDate(year, month+1, 1))
+        }
+    }
+
+    fun formatAsString(format: DateFormat): String {
+        return when(format) {
+            DateFormat.DAYMONTHYEARLONG -> "${DTUtils.monthIntToStr(dateMonth)} $dateDay $dateYear"
+            DateFormat.DAYMONTHYEARSHORT -> "${DTUtils.monthIntToStr(dateMonth, short = true)} $dateDay $dateYear"
+            DateFormat.MONTHYEARLONG -> "${DTUtils.monthIntToStr(dateMonth)} $dateYear"
+            DateFormat.MONTHYEARSHORT -> "${DTUtils.monthIntToStr(dateMonth, short = true)} $dateYear"
+            DateFormat.FULLLONG -> "${DTUtils.weekDayIntToStr(getDayOfWeek())}, $dateDay ${DTUtils.monthIntToStr(dateMonth)} $dateYear"
+            DateFormat.FULLSHORT -> "${DTUtils.weekDayIntToStr(getDayOfWeek())}, $dateDay ${DTUtils.monthIntToStr(dateMonth, short = true)} $dateYear"
+            DateFormat.YYYYMMDD -> "${getYear()}${getMonthOfYear().toString().padStart(2, '0')}${getDayOfMonth().toString().padStart(2, '0')}"
+            DateFormat.ISO -> dateObject.toString()
+        }
+    }
+
+    override fun toString(): String {
+        return formatAsString(DateFormat.ISO)
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Date) return false
+
+        return (other.getDayOfMonth() == dateDay && other.getMonthOfYear() == dateMonth && other.getYear() == dateYear)
+    }
+
+    override fun hashCode(): Int {
+        var result = dateYear
+        result = 31 * result + dateMonth
+        result = 31 * result + dateDay
+        return result
+    }
+}
+
 class DTUtils {
     companion object {
         // get number of days in a given month/year
-        fun getMonthDays(year: Int, month: Int): Int {
-            val x = LocalDate(year, month, 1)
-            return when(month){
-                12 -> x.daysUntil(LocalDate(year+1, 1, 1))
-                else -> x.daysUntil(LocalDate(year, month+1, 1))
-            }
-        }
-
-        // get the day of week (starting on sunday) of a given day/month/year
-        fun dateToWeekDay(year: Int, month: Int, day: Int): Int {
-            return when(val wd = LocalDate(year, month, day).dayOfWeek.isoDayNumber){
-                7 -> 1
-                else -> wd + 1
-            }
-        }
 
         // get all dates (in a 2D array of [[Y,M,D],...]) between two given dates (inclusive)
         fun getDaysBetween(date1: Array<Int>, date2: Array<Int>): Array<Array<Int>> {
@@ -42,25 +110,10 @@ class DTUtils {
         }
 
         // get current LocalDateTime
-        fun getNow(): LocalDateTime{
+        fun getNow(): Date{
             val currentMoment: Instant = Clock.System.now()
-            val datetimeInSystemZone: LocalDateTime = currentMoment.toLocalDateTime(TimeZone.currentSystemDefault())
-            return datetimeInSystemZone
-        }
-
-        // get current month
-        fun getMonth(): Int{
-            return getNow().monthNumber
-        }
-
-        // get current year
-        fun getYear(): Int{
-            return getNow().year
-        }
-
-        // get current day
-        fun getDay(): Int{
-            return getNow().dayOfMonth
+            val dateTZ: LocalDateTime = currentMoment.toLocalDateTime(TimeZone.currentSystemDefault())
+            return Date(dateTZ.year, dateTZ.monthNumber, dateTZ.dayOfMonth)
         }
 
         // convert month integer (1-12) to a string representation
@@ -141,13 +194,8 @@ class DTUtils {
         }
 
         // Given a string formatted as "YYYYMMDD", return integer array [Y, M, D]
-        fun parseDateStringToIntArray(dateString: String): Array<Int> {
-            return arrayOf(dateString.slice(0..3).toInt(), dateString.slice(4..5).toInt(), dateString.slice(6..7).toInt())
+        fun parseDateStringToDate(dateString: String): Date {
+            return Date(dateString.slice(0..3).toInt(), dateString.slice(4..5).toInt(), dateString.slice(6..7).toInt())
         }
     }
-}
-
-
-fun main() {
-    println(DTUtils.getDaysBetween(arrayOf(2024, 2, 29), arrayOf(2024, 3, 2)))
 }

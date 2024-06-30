@@ -4,14 +4,6 @@ enum class Frequency {YEARLY, MONTHLY, WEEKLY, DAILY}
 enum class ByWhat {MONTH, DAY}
 enum class UntilWhat {DATE, OCCURRENCES}
 
-data class Date(val year: Int, val month: Int, val day: Int)
-// TODO: increase date methods
-//          pass in frequency/interval
-//              if `freq` = daily -> skip to (next )*`frequency` day
-//              if `freq` = weekly -> skip to (next )*`frequency` same weekday
-//              if `freq` = monthly -> skip to (next )*`frequency` same day of month
-//              if `freq` = yearly -> skip to (next )*`frequency` same day of year
-
 data class RRule(val frequency: Frequency, val interval: Int = 1, val byWhat: ByWhat?, val byVal: String?, val untilWhat: UntilWhat?, val untilVal: String?)
 
 data class Event(val title: String, val color: String, val description: String, val location: String, val startTime: String, val endTime: String,
@@ -20,8 +12,7 @@ data class Event(val title: String, val color: String, val description: String, 
         when (rrule.untilWhat) {
             null -> {null}  // no limit,
             UntilWhat.DATE -> {  // set date hard limit
-                val finalDate_ = DTUtils.parseDateStringToIntArray(rrule.untilVal?: throw InvalidEventException("UNTIL (date) specified but no date"))
-                Date(finalDate_[0], finalDate_[1], finalDate_[2])
+                DTUtils.parseDateStringToDate(rrule.untilVal?: throw InvalidEventException("UNTIL (date) specified but no date"))
             }
             else -> {  // x number of occurrences limit
                 Date(1,1,1)  // TODO: endDate + rrule.frequency * rrule.untilVal
@@ -58,8 +49,8 @@ class EventLookup {
             // Essential properties; with no date, there can be no event
             val dtstart = event.getPropertyValue("DTSTART")?: continue
             val dtend = event.getPropertyValue("DTEND")?: continue
-            val dtstartParsed = DTUtils.parseDateStringToIntArray(dtstart)
-            val dtendParsed = DTUtils.parseDateStringToIntArray(dtend)
+            val dtstartParsed = DTUtils.parseDateStringToDate(dtstart)
+            val dtendParsed = DTUtils.parseDateStringToDate(dtend)
 
             // Start and end time
             val startTime: String
@@ -69,13 +60,13 @@ class EventLookup {
             if (!dtstart.contains('T', ignoreCase = true) || !dtend.contains('T', ignoreCase = true)) {  // event is allDay
                 startTime = "all-day"
                 endTime = ""
-                startDate = Date(dtstartParsed[0], dtstartParsed[1], dtstartParsed[2])
-                endDate = Date(dtstartParsed[0], dtstartParsed[1], dtstartParsed[2])
-            } else {
+                startDate = dtstartParsed
+                endDate = dtstartParsed
+            } else {  // event is not all day
                 startTime = "${dtstart.slice(9..10)}:${dtstart.slice(11..12)}"
                 endTime = "${dtend.slice(9..10)}:${dtend.slice(11..12)}"
-                startDate = Date(dtstartParsed[0], dtstartParsed[1], dtstartParsed[2])
-                endDate = Date(dtendParsed[0], dtendParsed[1], dtendParsed[2])
+                startDate = dtstartParsed
+                endDate = dtendParsed
             }
 
             // Other properties
