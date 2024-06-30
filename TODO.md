@@ -35,8 +35,12 @@
 	- [x] When clicked, launch NewEvent activity with start year/month/day as current selected year/month/day
 	- [x] If "cancel" clicked, exit the activity
 	- [ ] if "add" clicked, add to ICS file and exit the activity
-- [ ] Create a VEvent lookup class that is initialized from an array of VEvent objects:
-	- [ ] Implement log n complexity lookup that takes "YYYYMMDD" and returns all events that should be displayed on that day. Consider:
-		- [ ] One-time events single/multi-day all-day
-		- [ ] One-time events single/multi-day custom start/end times
-		- [ ] Repeating events (every x days/weeks/months/years) forever OR till a given date OR after x occurences
+- [ ] Minor improvements
+	- [ ] Only do month lookup when month is changed
+	- [ ] Add coloring to days with events in monthDays component
+	- [ ] Formatting improvement to Event component (prevent text overflowing)
+- [x] Create a VEvent lookup class that is initialized from an array of VEvent objects:
+	- [x] Implement log n complexity lookup that takes "YYYYMMDD" and returns all events that should be displayed on that day. Consider:
+		- [x] One-time events single/multi-day all-day
+		- [x] One-time events single/multi-day custom start/end times
+		- [x] Repeating events (every x days/weeks/months/years) forever OR till a given date OR after x occurences
