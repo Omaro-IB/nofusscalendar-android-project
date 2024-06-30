@@ -5,8 +5,8 @@ import Date
 import DateFormat
 import Event
 import EventLookup
+import ICSUtils
 import TimeUnit
-import VEventUtils
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -60,7 +60,7 @@ class Calendar : ComponentActivity() {
         enableEdgeToEdge()
 
         val uri = intent.getStringExtra("uri") ?: "No uri"
-        val icsRaw = VEventUtils.readTextFromUri(this@Calendar, uri)?: ""
+        val icsRaw = ICSUtils.readTextFromUri(this@Calendar, uri)?: ""
 
         setContent {
             NoFussCalendarTheme {
@@ -88,7 +88,7 @@ class Calendar : ComponentActivity() {
 fun Calendar(modifier: Modifier = Modifier, icsRaw: String) {
     // ICS Parsing and Events
     if (icsRaw == "") { Text("Error reading ICS file", color = colorResource(R.color.buttonred)) }
-    val events = VEventUtils.parseICS(icsRaw)  // contains all events info, easy to parse between .ics string
+    val events = ICSUtils.parseICS(icsRaw)  // contains all events info, easy to parse between .ics string
     val eventLookup = EventLookup(); eventLookup.createFromVevents(events) // hash map for quick lookup & quick display
     MainScreen(modifier = modifier, eventLookup = eventLookup)
 }
@@ -210,14 +210,14 @@ fun EventItem(title: String, location: String, description: String, color: Strin
             Row(modifier = Modifier
                 .fillMaxWidth()
                 .padding(end = 40.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                Row {Text(VEventUtils.clipString(title, "..", 14), fontWeight = FontWeight.Bold); Text(" @${VEventUtils.clipString(location, "..", 14)}", fontStyle = FontStyle.Italic)}
+                Row {Text(ICSUtils.clipString(title, "..", 14), fontWeight = FontWeight.Bold); Text(" @${ICSUtils.clipString(location, "..", 14)}", fontStyle = FontStyle.Italic)}
                 Text(start)
             }
             // Description and end time
             Row(modifier = Modifier
                 .fillMaxWidth()
                 .padding(end = 40.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(VEventUtils.clipString(description, "...", 28), color = colorResource(R.color.gray_css3))
+                Text(ICSUtils.clipString(description, "...", 28), color = colorResource(R.color.gray_css3))
                 Text(end)
             }
             Spacer(modifier = Modifier.padding(vertical = 2.dp))
