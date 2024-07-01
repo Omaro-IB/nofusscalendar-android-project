@@ -10,7 +10,7 @@
 - [ ] **Navigation**
 	- [ ] Search for events & Go to date
 	- [ ] Toggle (show/hide) separate calendars
-	- [ ] Separate views (day/month/week/month+day/year/simple event list)
+	- [ ] Separate views (month+day/month/week/year/simple event list)
 - [ ] **Usability**
 	- [ ] Run in background and read .ics every x minutes
 	- [ ] Handle multiple calendars stored in separate .ics files
@@ -35,10 +35,10 @@
 	- [x] When clicked, launch NewEvent activity with start year/month/day as current selected year/month/day
 	- [x] If "cancel" clicked, exit the activity
 	- [ ] if "add" clicked, add to ICS file and exit the activity
-- [ ] Minor improvements
-	- [ ] Only do month lookup when month is changed
-	- [ ] Add coloring to days with events in monthDays component
-	- [ ] Formatting improvement to Event component (prevent text overflowing)
+- [x] Minor improvements
+	- [x] Only do month lookup when month is changed
+	- [x] Add coloring to days with events in monthDays component
+	- [x] Formatting improvement to Event component (prevent text overflowing)
 - [x] Create a VEvent lookup class that is initialized from an array of VEvent objects:
 	- [x] Implement log n complexity lookup that takes "YYYYMMDD" and returns all events that should be displayed on that day. Consider:
 		- [x] One-time events single/multi-day all-day
