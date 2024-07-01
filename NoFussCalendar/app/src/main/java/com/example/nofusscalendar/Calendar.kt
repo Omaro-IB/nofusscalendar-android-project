@@ -75,7 +75,7 @@ class Calendar : ComponentActivity() {
                         .background(colorResource(R.color.beige))
                         .fillMaxWidth()
                         .fillMaxHeight()
-                        , icsRaw = icsRaw)
+                        , icsRaw = icsRaw, uri = uri)
                 }
             }
         }
@@ -83,16 +83,16 @@ class Calendar : ComponentActivity() {
 }
 
 @Composable
-fun Calendar(modifier: Modifier = Modifier, icsRaw: String) {
+fun Calendar(modifier: Modifier = Modifier, icsRaw: String, uri: String) {
     // ICS Parsing and Events
     if (icsRaw == "") { Text("Error reading ICS file", color = colorResource(R.color.buttonred)) }
     val events = ICSUtils.parseICS(icsRaw)  // contains all events info, easy to parse between .ics string
     val eventLookup = EventLookup(); eventLookup.createFromVevents(events) // hash map for quick lookup & quick display
-    MainScreen(modifier = modifier, eventLookup = eventLookup)
+    MainScreen(modifier = modifier, eventLookup = eventLookup, uri = uri)
 }
 
 @Composable
-fun MainScreen(modifier: Modifier = Modifier, eventLookup: EventLookup) {
+fun MainScreen(modifier: Modifier = Modifier, eventLookup: EventLookup, uri: String) {
     val context = LocalContext.current
     val redraw = remember { mutableStateOf(0) }
 
@@ -160,8 +160,9 @@ fun MainScreen(modifier: Modifier = Modifier, eventLookup: EventLookup) {
             Box(modifier = Modifier
                 .padding(vertical = 20.dp)
                 .align(Alignment.BottomEnd)) {
-                IconButton(onClick = { val intent = Intent(context, NewEvent::class.java).apply { putExtra("selectedDate", calDate.value.formatAsString(DateFormat.YYYYMMDD)) } // Start New Event activity
-                                       context.startActivity(intent) }
+                IconButton(onClick = { val intent = Intent(context, NewEvent::class.java).apply {
+                    putExtra("selectedDate", calDate.value.formatAsString(DateFormat.YYYYMMDD))
+                    putExtra("uri", uri)}; context.startActivity(intent) }  // Start New Event activity
                     , modifier = Modifier.size(iconSize.dp)){ Icon(
                     painterResource(R.drawable.plus_box), tint = colorResource(R.color.buttongreen), contentDescription = "Add event", modifier = Modifier.size((iconSize*0.85).dp)) }
             }
@@ -172,6 +173,7 @@ fun MainScreen(modifier: Modifier = Modifier, eventLookup: EventLookup) {
 
 @Composable
 fun EventItem(title: String, location: String, description: String, color: String, start: String, end: String){
+    // TODO: add functionality that when clicked, start NewEvent activity with all appropriate info already-filled in
     val c = when(color){
         "black" -> colorResource(R.color.black_css3)
         "silver" -> colorResource(R.color.silver_css3)
@@ -238,10 +240,11 @@ fun Events(modifier: Modifier = Modifier, date: Date, eventArray: Array<Event>) 
         } else {
           LazyColumn{
               items(eventArray.size) { event ->
-                  val startDate = eventArray[event].startDate
-                  val endDate = eventArray[event].finalDate
-                  var startTime = eventArray[event].startTime
-                  var endTime = eventArray[event].endTime
+                  val te = eventArray[event]
+                  val startDate = te.startDate
+                  val endDate = te.finalDate
+                  var startTime = if (te.startHour == -1) "all-day" else "${te.startHour}:${te.startMinute}"
+                  var endTime = if (te.startHour == -1) "" else "${te.endHour}:${te.endMinute}"
                   if (startDate != date) {    // this event does not start on selected day
                       startTime += if (startDate.getYear() != date.getYear()) { " (${startDate.formatAsString(DateFormat.MONTHYEARSHORT)})" }  // event not in same year as start
                       else { " (${startDate.formatAsString(DateFormat.DAYMONTHSHORT)})" }  // event in same year but different month/day
@@ -253,10 +256,10 @@ fun Events(modifier: Modifier = Modifier, date: Date, eventArray: Array<Event>) 
                   }
 
                   EventItem(
-                      title = eventArray[event].title,
-                      location = eventArray[event].location,
-                      description = eventArray[event].description,
-                      color = eventArray[event].color,
+                      title = te.title,
+                      location = te.location,
+                      description = te.description,
+                      color = te.color,
                       start = startTime,
                       end = endTime
                   )

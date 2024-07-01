@@ -15,8 +15,8 @@ enum class UntilWhat {DATE, OCCURRENCES}
 // RRule; specifies reoccurring event rule
 data class RRule(val frequency: Frequency, val interval: Int = 1, val byWhat: ByWhat?, val byVal: String?, val untilWhat: UntilWhat?, val untilVal: String?)
 
-data class Event(val title: String, val color: String, val description: String, val location: String, val startTime: String, val endTime: String,
-                 val startDate: Date, val endDate: Date, val rrule: RRule?): Comparable<Event> {
+data class Event(val uid: String, val title: String, val color: String, val description: String, val location: String,
+                 val startHour: Int, val startMinute: Int, val endHour: Int, val endMinute: Int, val startDate: Date, val endDate: Date, val rrule: RRule?): Comparable<Event> {
     /**
      * Creates Event object given appropriate parameters
      */
@@ -119,26 +119,29 @@ class EventLookup {
          */
         // Process all events into lookup table
         for (event in vevents) {
-            // Essential properties; with no date, there can be no event
+            // Essential properties; with no date or UID, there can be no event
             val dtstart = event.getPropertyValue("DTSTART")?: continue
             val dtend = event.getPropertyValue("DTEND")?: continue
+            val uid = event.getPropertyValue("UID")?: continue
             val dtstartParsed = DTUtils.parseDateStringToDate(dtstart)
             val dtendParsed = DTUtils.parseDateStringToDate(dtend)
 
             // Start and end time
-            val startTime: String
-            val endTime: String
+            val startHour: Int
+            val startMinute: Int
+            val endHour: Int
+            val endMinute: Int
             val startDate: Date
             val endDate: Date
             if (!dtstart.contains('T', ignoreCase = true) || !dtend.contains('T', ignoreCase = true)) {  // event is allDay
-                startTime = "all-day"
-                endTime = ""
+                startHour = -1; startMinute = -1
+                endHour = -1; endMinute = -1
                 startDate = dtstartParsed
                 endDate = dtendParsed
                 endDate.changeDate(TimeUnit.DAY, -1)
             } else {  // event is not all day
-                startTime = "${dtstart.slice(9..10)}:${dtstart.slice(11..12)}"
-                endTime = "${dtend.slice(9..10)}:${dtend.slice(11..12)}"
+                startHour = dtstart.slice(9..10).toInt(); startMinute = dtstart.slice(11..12).toInt()
+                endHour = dtstart.slice(9..10).toInt(); endMinute = dtstart.slice(11..12).toInt()
                 startDate = dtstartParsed
                 endDate = dtendParsed
             }
@@ -193,7 +196,7 @@ class EventLookup {
             }
 
             // Add event to table
-            lookupTable += Event(title, color, description, location, startTime, endTime, startDate, endDate, rrule)
+            lookupTable += Event(uid, title, color, description, location, startHour, startMinute, endHour, endMinute, startDate, endDate, rrule)
         }
 
         lookupTable.sort()  // sort by final date for binary search

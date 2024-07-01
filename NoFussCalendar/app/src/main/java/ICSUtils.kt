@@ -200,14 +200,13 @@ class ICSUtils{
             return string
         }
 
-        // Slice string to maximum given length, replace end with replaceWith
-        fun clipString(string: String, replaceWith: String, limit: Int): String {
-            return if (string.length > limit) {
-                string.slice(0..<limit) + replaceWith
-            } else {
-                string
-            }
+        fun addEventToICS(uri: String, event: Event) {
+            TODO()
         }
+//        fun addEvent(uid: String, title: String, color: String, description: String, location: String,
+//                     startHour: Int, startMinute: Int, endHour: Int, endMinute: Int, startDate: Date, endDate: Date, rrule: RRule?) {
+//            lookupTable += Event(uid, title, color, description, location, startHour, startMinute, endHour, endMinute, startDate, endDate, rrule)
+//        }
 
         // Takes file URI -> returns nullable string of content
         fun readTextFromUri(context: Context, uriS: String): String? {

@@ -1,7 +1,9 @@
 package com.example.nofusscalendar
+import Event
 import DTUtils
 import Date
 import DateFormat
+import ICSUtils
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Intent
@@ -50,6 +52,7 @@ class NewEvent : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val selectedDate = intent.getStringExtra("selectedDate") ?: "19900101"
+        val uri = intent.getStringExtra("uri") ?: throw Exception("Something went terribly wrong; no URI passed into NewEvent")
         setContent {
             NoFussCalendarTheme {
                 Column {
@@ -61,7 +64,7 @@ class NewEvent : ComponentActivity() {
                     EventDialog(modifier = Modifier
                         .fillMaxHeight()
                         .fillMaxWidth()
-                        .background(colorResource(R.color.beige)), DTUtils.parseDateStringToDate(selectedDate))
+                        .background(colorResource(R.color.beige)), DTUtils.parseDateStringToDate(selectedDate), uri)
                 }
             }
         }
@@ -69,11 +72,11 @@ class NewEvent : ComponentActivity() {
 }
 
 @Composable
-fun EventDialog(modifier: Modifier = Modifier, date: Date) {
+fun EventDialog(modifier: Modifier = Modifier, date: Date, uri: String) {
     // Fetching the Local Context
     val mContext = LocalContext.current
 
-    // States
+    // States  TODO: set initial value from intent
     // End Date/Time
     val endDate: Date by remember { mutableStateOf(date) }
     val endHour = remember { mutableStateOf(12) }
@@ -134,7 +137,8 @@ fun EventDialog(modifier: Modifier = Modifier, date: Date) {
             }
             Text("Event", fontWeight = FontWeight.Bold)
             TextButton(
-                onClick = { /* TODO: exit activity and save */ }
+                onClick = { val event = Event()  // TODO: use intent to get all this event info (also needed when editing an event)
+                            ICSUtils.addEventToICS(uri, event); mContext.startActivity(Intent(mContext, MainActivity::class.java)) }
             ) {
                 Text("Confirm", color = colorResource(R.color.buttongreen))
             }
