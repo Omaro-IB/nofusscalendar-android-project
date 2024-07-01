@@ -9,7 +9,6 @@ import ICSUtils
 import TimeUnit
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -31,13 +30,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.nofusscalendar.ui.theme.NoFussCalendarTheme
 
 class Calendar : ComponentActivity() {
@@ -98,54 +97,48 @@ fun MainScreen(modifier: Modifier = Modifier, eventLookup: EventLookup) {
     val redraw = remember { mutableStateOf(0) }
 
     // Displayed date
-    val displayedDate = remember { mutableStateOf(DTUtils.getNow()) }
-    // Selected date
-    val selectedDate = remember { mutableStateOf(DTUtils.getNow()) }
+    val calDate = remember { mutableStateOf(DTUtils.getNow()) }
 
     // eventsDayMap for this month from lookup
-    val eventDayMap = eventLookup.lookup(selectedDate.value.getYear(), selectedDate.value.getMonthOfYear())
-    var debugString = ""
-    var debugString2: String
+    val eventDayMap = eventLookup.lookup(calDate.value.getYear(), calDate.value.getMonthOfYear())
+    val hasEventArray = BooleanArray(31)
     // get only the events for the selected date from the map
     var eventArray: Array<Event> = arrayOf()
     eventDayMap.forEach {
-        if (it.first.any { it == selectedDate.value.getDayOfMonth() }) {eventArray += it.second}
-        debugString2 = ""
-        it.first.forEach { debugString2 += "$it " }
-        debugString += "$debugString2 | ${it.second}\n"
+        var check = true
+        for (day in it.first) {
+            if (check && day == calDate.value.getDayOfMonth()) {eventArray += it.second; check = false}
+            hasEventArray[day-1] = true
+        }
     }
-    Log.d("Calendar - eventDayMap", debugString)
-
-
 
     Column(modifier = modifier) {
-        Text(redraw.value.toString())
+        Text(redraw.value.toString(), fontSize = 0.sp, lineHeight = 0.sp)
 
         Column(modifier = Modifier.height(400.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             // Month changer
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
                 // Left
                 Box {
-                    IconButton(onClick = { displayedDate.value.changeDate(TimeUnit.YEAR, -1); redraw.value += 1 }, modifier = Modifier.offset((-20).dp)){ Icon(
+                    IconButton(onClick = { calDate.value.changeDate(TimeUnit.YEAR, -1); redraw.value += 1 }, modifier = Modifier.offset((-20).dp)){ Icon(
                         painterResource(R.drawable.chevron_double_left), contentDescription = "Go back 1 year") }
-                    IconButton(onClick = { displayedDate.value.changeDate(TimeUnit.MONTH, -1); redraw.value += 1 }){ Icon(painterResource(R.drawable.chevron_left), contentDescription = "Go back 1 month") }
+                    IconButton(onClick = { calDate.value.changeDate(TimeUnit.MONTH, -1); redraw.value += 1 }){ Icon(painterResource(R.drawable.chevron_left), contentDescription = "Go back 1 month") }
                 }
                 // Title
-                Row(modifier = Modifier.width(200.dp), horizontalArrangement = Arrangement.Center) {Text(text = displayedDate.value.formatAsString(DateFormat.MONTHYEARLONG), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)}
+                Row(modifier = Modifier.width(200.dp), horizontalArrangement = Arrangement.Center) {Text(text = calDate.value.formatAsString(DateFormat.MONTHYEARLONG), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)}
                 // Right
                 Box {
-                    IconButton(onClick = { displayedDate.value.changeDate(TimeUnit.MONTH, 1); redraw.value += 1 }){ Icon(painterResource(R.drawable.chevron_right), contentDescription = "Go forward 1 month") }
-                    IconButton(onClick = { displayedDate.value.changeDate(TimeUnit.YEAR, 1); redraw.value += 1 }, modifier = Modifier.offset(20.dp)){ Icon(
+                    IconButton(onClick = { calDate.value.changeDate(TimeUnit.MONTH, 1); redraw.value += 1 }){ Icon(painterResource(R.drawable.chevron_right), contentDescription = "Go forward 1 month") }
+                    IconButton(onClick = { calDate.value.changeDate(TimeUnit.YEAR, 1); redraw.value += 1 }, modifier = Modifier.offset(20.dp)){ Icon(
                         painterResource(R.drawable.chevron_double_right), contentDescription = "Go forward 1 year") }
                 }
             }
             // Month grid - display starting on first of month
-            MonthDays(startOn = displayedDate.value.getDayOfWeekOfFirstOfMonth(), numDays = displayedDate.value.getNumDaysOfMonth(),
-                selectedDay = (if (displayedDate.value.getYear() == selectedDate.value.getYear() && displayedDate.value.getMonthOfYear() == selectedDate.value.getMonthOfYear()) selectedDate.value.getDayOfMonth() else 0),
+            MonthDays(startOn = calDate.value.getDayOfWeekOfFirstOfMonth(), numDays = calDate.value.getNumDaysOfMonth(),
+                hasEventArray = hasEventArray,
+                selectedDay = (if (calDate.value.getYear() == calDate.value.getYear() && calDate.value.getMonthOfYear() == calDate.value.getMonthOfYear()) calDate.value.getDayOfMonth() else 0),
                 onDaySelect = {day: Int ->
-                    selectedDate.value.setDayOfMonth(day)
-                    selectedDate.value.setMonthOfYear(displayedDate.value.getMonthOfYear())
-                    selectedDate.value.setYear(displayedDate.value.getYear())
+                    calDate.value.setDayOfMonth(day)
                     redraw.value += 1 }) // only show selected day if on selected year/month
 
         }
@@ -161,13 +154,13 @@ fun MainScreen(modifier: Modifier = Modifier, eventLookup: EventLookup) {
             Events(modifier = Modifier
                 .background(colorResource(R.color.beige))
                 .fillMaxWidth()
-                .fillMaxHeight(), selectedDate.value, eventArray)
+                .fillMaxHeight(), calDate.value, eventArray)
             // Add event button
             val iconSize = 96
             Box(modifier = Modifier
                 .padding(vertical = 20.dp)
                 .align(Alignment.BottomEnd)) {
-                IconButton(onClick = { val intent = Intent(context, NewEvent::class.java).apply { putExtra("selectedDate", selectedDate.value.formatAsString(DateFormat.YYYYMMDD)) } // Start New Event activity
+                IconButton(onClick = { val intent = Intent(context, NewEvent::class.java).apply { putExtra("selectedDate", calDate.value.formatAsString(DateFormat.YYYYMMDD)) } // Start New Event activity
                                        context.startActivity(intent) }
                     , modifier = Modifier.size(iconSize.dp)){ Icon(
                     painterResource(R.drawable.plus_box), tint = colorResource(R.color.buttongreen), contentDescription = "Add event", modifier = Modifier.size((iconSize*0.85).dp)) }
@@ -207,7 +200,7 @@ fun EventItem(title: String, location: String, description: String, color: Strin
         Column {
             Row {
                 // Title & location
-                Column(modifier = Modifier.width(260.dp)) {
+                Column(modifier = Modifier.width(248.dp)) {
                     Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Bold)
                     Row {Icon(painterResource(R.drawable.map_marker), contentDescription = "Location icon")
                         Text(location); Spacer(modifier = Modifier.padding(horizontal = 8.dp))}
@@ -241,7 +234,7 @@ fun Events(modifier: Modifier = Modifier, date: Date, eventArray: Array<Event>) 
         Spacer(modifier = Modifier.height(10.dp))
 
         if (eventArray.isEmpty()) {
-            Text("No events for this day")
+            Row(modifier = Modifier.padding(horizontal = 24.dp)) {Text("No events for this day")}
         } else {
           LazyColumn{
               items(eventArray.size) { event ->
@@ -275,29 +268,27 @@ fun Events(modifier: Modifier = Modifier, date: Date, eventArray: Array<Event>) 
 
 
 @Composable
-fun DaySelect(modifier: Modifier = Modifier, day: Int, selected: Boolean, onClick: () -> Unit) {
+fun DaySelect(modifier: Modifier = Modifier, day: Int, selected: Boolean, hasEvent: Boolean, onClick: () -> Unit) {
     // Highlight color when selected
     val c = when(selected){
         true -> colorResource(R.color.buttongreenhighlight)
-        else -> colorResource(R.color.buttongreen)
+        false -> colorResource(R.color.buttongreen)
+    }
+    val b = when(hasEvent) {
+        true -> 2
+        false -> 0
     }
 
     // Day box
-    Box {
-        Button(onClick = onClick,
-            modifier = modifier
-                .fillMaxWidth()
-                .align(Alignment.Center),
-            shape = RoundedCornerShape(5),
-            colors = ButtonDefaults.buttonColors(containerColor = c)
-        ){}
+    Box(modifier = modifier.fillMaxWidth().background(c).border(width = b.dp, color = colorResource(R.color.blackshadow))) {
+        TextButton(onClick = onClick){}
         Text(text = day.toString(), Modifier.align(Alignment.Center), color = colorResource(R.color.whitehighlight))
     }
 }
 
 
 @Composable
-fun MonthDays(startOn: Int, numDays: Int, selectedDay: Int, onDaySelect: (Int) -> Unit) {
+fun MonthDays(startOn: Int, numDays: Int, hasEventArray: BooleanArray, selectedDay: Int, onDaySelect: (Int) -> Unit) {
     // Days of week
     LazyVerticalGrid(
         columns = GridCells.Fixed(7)
@@ -320,7 +311,8 @@ fun MonthDays(startOn: Int, numDays: Int, selectedDay: Int, onDaySelect: (Int) -
         items(numDays+startOn-1) { day ->
             when(day+1) {
                 in (1..<startOn) -> Spacer(modifier = Modifier.fillMaxWidth()) // leave gap till first day
-                else -> DaySelect(day = day - startOn + 2, selected = selectedDay == (day - startOn + 2), onClick = {onDaySelect(day - startOn + 2)})  // first day to last
+                else -> DaySelect(day = day - startOn + 2, selected = selectedDay == (day - startOn + 2),
+                    hasEvent = hasEventArray[day - startOn + 1], onClick = {onDaySelect(day - startOn + 2)})  // first day to last
             }
         }
     }
