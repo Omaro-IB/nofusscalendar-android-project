@@ -31,7 +31,7 @@ data class Event(val title: String, val color: String, val description: String, 
                 UntilWhat.OCCURRENCES -> {  // x number of occurrences limit, finalDate is endDate + frequency * occurrences
                     val finalDate_ = endDate
                     val timeUnit_ = when(rrule.frequency) {Frequency.YEARLY -> TimeUnit.YEAR; Frequency.MONTHLY -> TimeUnit.MONTH; Frequency.WEEKLY -> TimeUnit.WEEK; Frequency.DAILY -> TimeUnit.DAY}
-                    finalDate_.changeDate(timeUnit_, (rrule.untilVal?: throw InvalidEventException("COUNT (occurrences) specified but no occurrences")).toInt())
+                    finalDate_.changeDate(timeUnit_, ((rrule.untilVal?: throw InvalidEventException("COUNT (occurrences) specified but no occurrences")).toInt() - 1) * (rrule.interval))
                     finalDate_
                 }
             }
@@ -134,7 +134,8 @@ class EventLookup {
                 startTime = "all-day"
                 endTime = ""
                 startDate = dtstartParsed
-                endDate = dtstartParsed
+                endDate = dtendParsed
+                endDate.changeDate(TimeUnit.DAY, -1)
             } else {  // event is not all day
                 startTime = "${dtstart.slice(9..10)}:${dtstart.slice(11..12)}"
                 endTime = "${dtend.slice(9..10)}:${dtend.slice(11..12)}"

@@ -246,7 +246,7 @@ fun Events(modifier: Modifier = Modifier, date: Date, eventArray: Array<Event>) 
           LazyColumn{
               items(eventArray.size) { event ->
                   val startDate = eventArray[event].startDate
-                  val endDate = eventArray[event].endDate
+                  val endDate = eventArray[event].finalDate
                   var startTime = eventArray[event].startTime
                   var endTime = eventArray[event].endTime
                   if (startDate != date) {    // this event does not start on selected day
@@ -254,7 +254,8 @@ fun Events(modifier: Modifier = Modifier, date: Date, eventArray: Array<Event>) 
                       else { " (${startDate.formatAsString(DateFormat.DAYMONTHSHORT)})" }  // event in same year but different month/day
                   }
                   if (endDate != date) {    // this event does not end on selected day
-                      endTime += if (endDate.getYear() != date.getYear()) { " (${endDate.formatAsString(DateFormat.MONTHYEARSHORT)})" }  // event not in same year as end
+                      endTime += if (endDate == null) {" (No End)"}  // there is no end
+                      else if (endDate.getYear() != date.getYear()) { " (${endDate.formatAsString(DateFormat.MONTHYEARSHORT)})" }  // event not in same year as end
                       else { " (${endDate.formatAsString(DateFormat.DAYMONTHSHORT)})" }  // event in same year but different month/day
                   }
 
