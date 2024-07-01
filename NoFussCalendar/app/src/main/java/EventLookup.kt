@@ -145,8 +145,8 @@ class EventLookup {
             // Other properties
             val title = event.getPropertyValue("SUMMARY")?: "No Title"
             val location = event.getPropertyValue("LOCATION")?:  "No Location"
-            val description = event.getPropertyValue("DESCRIPTION")?: "No Description"
-            val color = event.getPropertyValue("COLOR")?: "No Color"
+            val description = event.getPropertyValue("DESCRIPTION")?: ""
+            val color = event.getPropertyValue("COLOR")?: ""
 
             // Repeating rule
             val rruleIndex = event.propertyLabelToIndex("RRULE")

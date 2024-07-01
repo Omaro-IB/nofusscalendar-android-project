@@ -47,9 +47,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.nofusscalendar.ui.theme.NoFussCalendarTheme
 
@@ -105,7 +105,7 @@ fun MainScreen(modifier: Modifier = Modifier, eventLookup: EventLookup) {
     // eventsDayMap for this month from lookup
     val eventDayMap = eventLookup.lookup(selectedDate.value.getYear(), selectedDate.value.getMonthOfYear())
     var debugString = ""
-    var debugString2 = ""
+    var debugString2: String
     // get only the events for the selected date from the map
     var eventArray: Array<Event> = arrayOf()
     eventDayMap.forEach {
@@ -196,45 +196,38 @@ fun EventItem(title: String, location: String, description: String, color: Strin
         "blue" -> colorResource(R.color.black_css3)
         "teal" -> colorResource(R.color.teal_css3)
         "aqua" -> colorResource(R.color.aqua_css3)
-        else -> colorResource(R.color.beige)
+        else -> null
     }
-    Row {
-        // Color spacer
-        Spacer(modifier = Modifier.padding(horizontal = 8.dp))
-        Box(modifier = Modifier
-            .height(40.dp)
-            .width(6.dp)
-            .clip(RoundedCornerShape(30.dp))
-            .background(c)
-            .border(
-                width = (0.4).dp,
-                color = colorResource(R.color.blackshadow),
-                shape = RoundedCornerShape(12.dp)
-            ))
+    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+        // Color spacer  TODO: update height based on # of lines of description
+        Box(modifier = Modifier.width(6.dp).height((44).dp).clip(RoundedCornerShape(30.dp)).
+                                background(c?: colorResource(R.color.beige)).
+                                border(width = (0.4).dp, color = colorResource(R.color.blackshadow), shape = RoundedCornerShape(12.dp)))
         Spacer(modifier = Modifier.padding(horizontal = 4.dp))
-        // Two lines
         Column {
-            // Title, location, and start time
-            Row(modifier = Modifier
-                .fillMaxWidth()
-                .padding(end = 40.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                Row {Text(ICSUtils.clipString(title, "..", 14), fontWeight = FontWeight.Bold); Text(" @${ICSUtils.clipString(location, "..", 14)}", fontStyle = FontStyle.Italic)}
-                Text(start)
+            Row {
+                // Title & location
+                Column(modifier = Modifier.width(260.dp)) {
+                    Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Bold)
+                    Row {Icon(painterResource(R.drawable.map_marker), contentDescription = "Location icon")
+                        Text(location); Spacer(modifier = Modifier.padding(horizontal = 8.dp))}
+                }
+                Spacer(Modifier.weight(1f).fillMaxHeight())
+                // Start and end time
+                Column {
+                    Text(start)
+                    Text(end)
+                }
             }
-            // Description and end time
-            Row(modifier = Modifier
-                .fillMaxWidth()
-                .padding(end = 40.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(ICSUtils.clipString(description, "...", 28), color = colorResource(R.color.gray_css3))
-                Text(end)
+            // Description
+            if (description.isNotEmpty()) {
+                Text(description, color = colorResource(R.color.gray_css3), maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
-            Spacer(modifier = Modifier.padding(vertical = 2.dp))
-            Spacer(modifier = Modifier
-                .height(1.dp)
-                .fillMaxWidth()
-                .padding(end = 22.dp)
-                .background(colorResource(R.color.pinkbeige)))
-            Spacer(modifier = Modifier.padding(vertical = 8.dp))
+            Column {
+                Spacer(modifier = Modifier.padding(vertical = 2.dp))
+                Spacer(modifier = Modifier.height(1.dp).fillMaxWidth().padding(end = 22.dp).background(colorResource(R.color.pinkbeige)))
+                Spacer(modifier = Modifier.padding(vertical = 8.dp))
+            }
         }
     }
 }
@@ -256,8 +249,14 @@ fun Events(modifier: Modifier = Modifier, date: Date, eventArray: Array<Event>) 
                   val endDate = eventArray[event].endDate
                   var startTime = eventArray[event].startTime
                   var endTime = eventArray[event].endTime
-                  if (startDate != date) {startTime += " (${startDate.formatAsString(DateFormat.MONTHYEARSHORT)})"}  // this event does not start on selected day
-                  if (endDate != date) {endTime += " (${endDate.formatAsString(DateFormat.MONTHYEARLONG)})"}  // this event does not end on selected day
+                  if (startDate != date) {    // this event does not start on selected day
+                      startTime += if (startDate.getYear() != date.getYear()) { " (${startDate.formatAsString(DateFormat.MONTHYEARSHORT)})" }  // event not in same year as start
+                      else { " (${startDate.formatAsString(DateFormat.DAYMONTHSHORT)})" }  // event in same year but different month/day
+                  }
+                  if (endDate != date) {    // this event does not end on selected day
+                      endTime += if (endDate.getYear() != date.getYear()) { " (${endDate.formatAsString(DateFormat.MONTHYEARSHORT)})" }  // event not in same year as end
+                      else { " (${endDate.formatAsString(DateFormat.DAYMONTHSHORT)})" }  // event in same year but different month/day
+                  }
 
                   EventItem(
                       title = eventArray[event].title,

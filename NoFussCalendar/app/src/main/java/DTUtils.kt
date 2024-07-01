@@ -16,7 +16,7 @@ import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 
 enum class TimeUnit {YEAR, MONTH, WEEK, DAY}
-enum class DateFormat {DAYMONTHYEARSHORT, DAYMONTHYEARLONG, MONTHYEARSHORT, MONTHYEARLONG, FULLSHORT, FULLLONG, YYYYMMDD, ISO}
+enum class DateFormat {DAYMONTHYEARSHORT, DAYMONTHYEARLONG, DAYMONTHSHORT, DAYMONTHLONG, MONTHYEARSHORT, MONTHYEARLONG, FULLSHORT, FULLLONG, YYYYMMDD, ISO}
 
 data class Date(private val year: Int, private val month: Int, private val day: Int) {
     /**
@@ -155,8 +155,10 @@ data class Date(private val year: Int, private val month: Int, private val day: 
         return when(format) {
             DateFormat.DAYMONTHYEARLONG -> "${DTUtils.monthIntToStr(dateMonth)} $dateDay $dateYear"
             DateFormat.DAYMONTHYEARSHORT -> "${DTUtils.monthIntToStr(dateMonth, short = true)} $dateDay $dateYear"
+            DateFormat.DAYMONTHLONG -> "${DTUtils.monthIntToStr(dateMonth)} $dateDay"
+            DateFormat.DAYMONTHSHORT -> "${DTUtils.monthIntToStr(dateMonth, short = true)} $dateDay"
             DateFormat.MONTHYEARLONG -> "${DTUtils.monthIntToStr(dateMonth)} $dateYear"
-            DateFormat.MONTHYEARSHORT -> "${DTUtils.monthIntToStr(dateMonth, short = true)} $dateYear"
+            DateFormat.MONTHYEARSHORT -> "${DTUtils.monthIntToStr(dateMonth, short = true)} '${dateYear.toString().slice(2..3)}"
             DateFormat.FULLLONG -> "${DTUtils.weekDayIntToStr(getDayOfWeek())}, $dateDay ${DTUtils.monthIntToStr(dateMonth)} $dateYear"
             DateFormat.FULLSHORT -> "${DTUtils.weekDayIntToStr(getDayOfWeek())}, $dateDay ${DTUtils.monthIntToStr(dateMonth, short = true)} $dateYear"
             DateFormat.YYYYMMDD -> "${getYear()}${getMonthOfYear().toString().padStart(2, '0')}${getDayOfMonth().toString().padStart(2, '0')}"
