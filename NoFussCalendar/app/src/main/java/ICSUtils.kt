@@ -9,6 +9,7 @@ import android.net.Uri
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
+import java.util.UUID
 
 data class Value(val label: String, val word: String) {
     /**
@@ -66,6 +67,8 @@ data class VEvent(val properties: Array<Property>, val valarm: VAlarm?) {
      * Main VEvent object
      * Contains multiple properties and optionally a VAlarm
      */
+    val uidIndex = propertyLabelToIndex("UID")  // store UID index since this accessed frequently
+
     override fun toString(): String {
         var string = "BEGIN:VEVENT"
         for (property in properties) {string += "\n$property"}
@@ -87,6 +90,11 @@ data class VEvent(val properties: Array<Property>, val valarm: VAlarm?) {
         val propertyIndex = propertyLabelToIndex(label)
         if (propertyIndex == -1) { return null }
         return properties[propertyIndex].values.size == 1
+    }
+
+    fun getUID(): String {  // this function should be called when retrieving UID (much faster than getPropertyValue("UID"))
+        if (uidIndex == -1) {return ""}
+        return properties[uidIndex].values[0].word
     }
 
     fun getPropertyValue(propertyLabel: String): String? {
@@ -121,6 +129,49 @@ data class VEvent(val properties: Array<Property>, val valarm: VAlarm?) {
 
 class ICSUtils{
     companion object{
+        fun createVEvent(uid: String?, summary: String, location: String, description: String, color: String, startDate: Date, endDate: Date, startHour: Int?, startMinute: Int?, endHour: Int?, endMinute: Int?, rrule: RRule?): VEvent {
+            /*
+            Manually create a VEvent object, useful for adding an event from user input
+            If UID not specified, the function will create one
+             */
+            val summaryProp = Property("SUMMARY", arrayOf(Value("", summary)))
+            val locationProp = Property("LOCATION", arrayOf(Value("", location)))
+            val descriptionProp = Property("DESCRIPTION", arrayOf(Value("", description)))
+            val uidProp: Property
+            if (uid == null) {
+                uidProp = Property("UID", arrayOf(Value("", UUID.randomUUID().toString())))
+            } else {
+                uidProp = Property("UID", arrayOf(Value("", uid)))
+            }
+            val colorProp = Property("COLOR", arrayOf(Value("", color)))
+            val dtstartProp: Property
+            if (startHour == null && startMinute == null) {
+                dtstartProp = Property("DTSTART", arrayOf(Value("", startDate.formatAsString(DateFormat.YYYYMMDD))))
+            } else {
+                dtstartProp = Property("DTSTART", arrayOf(Value("", "${startDate.formatAsString(DateFormat.YYYYMMDD)}T${startHour.toString().padStart(2,'0')}${startMinute.toString().padStart(2,'0')}00")))
+            }
+            val dtendProp: Property
+            if (endHour == null && endMinute == null) {
+                dtendProp = Property("DTEND", arrayOf(Value("", endDate.formatAsString(DateFormat.YYYYMMDD))))
+            } else {
+                dtendProp = Property("DTEND", arrayOf(Value("", "${endDate.formatAsString(DateFormat.YYYYMMDD)}T${endHour.toString().padStart(2,'0')}${endMinute.toString().padStart(2,'0')}00")))
+            }
+            if (rrule == null) {
+                return VEvent(arrayOf(uidProp, summaryProp, locationProp, descriptionProp, colorProp, dtstartProp, dtendProp), null)
+            } else {
+                var rrulePropVals = arrayOf(
+                    Value("FREQ", rrule.frequency.toString()),
+                    Value("INTERVAL", rrule.interval.toString()),
+                )
+                if (rrule.byWhat != null && rrule.byVal != null) {rrulePropVals += Value("BY${rrule.byWhat}", rrule.byVal)}
+                if (rrule.untilVal != null) {
+                    if (rrule.untilWhat == UntilWhat.OCCURRENCES) { rrulePropVals += Value("COUNT", rrule.untilVal) }
+                    if (rrule.untilWhat == UntilWhat.DATE) { rrulePropVals += Value("UNTIL", rrule.untilVal) }
+                }
+                return VEvent(arrayOf(uidProp, summaryProp, locationProp, descriptionProp, colorProp, dtstartProp, dtendProp, Property("RRULE", rrulePropVals)), null)
+            }
+        }
+
         fun parseICS(ics: String): Array<VEvent> {
             /*
             Given a .ics format string, parse into an array of VEvent objects
@@ -195,18 +246,15 @@ class ICSUtils{
                 PRODID:-//omaribrah.im//NONSGML No Fuss Calendar//EN
                 VERSION:1.0
             """.trimIndent()
-            for (vevent in vevents) {string += "\n$vevent"}
+            for (vevent in vevents) {if (vevent.uidIndex != -1) {string += "\n$vevent"}}
             string += "\nEND:VCALENDAR"
             return string
         }
 
-        fun addEventToICS(uri: String, event: Event) {
-            TODO()
+        fun writeVEventsToUri(context: Context, uriS: String, vevents: Array<VEvent>) {
+            val icsString = createICS(vevents)
+            writeTextToUri(context, uriS, icsString)
         }
-//        fun addEvent(uid: String, title: String, color: String, description: String, location: String,
-//                     startHour: Int, startMinute: Int, endHour: Int, endMinute: Int, startDate: Date, endDate: Date, rrule: RRule?) {
-//            lookupTable += Event(uid, title, color, description, location, startHour, startMinute, endHour, endMinute, startDate, endDate, rrule)
-//        }
 
         // Takes file URI -> returns nullable string of content
         fun readTextFromUri(context: Context, uriS: String): String? {

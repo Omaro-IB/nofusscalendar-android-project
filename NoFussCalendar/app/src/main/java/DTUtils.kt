@@ -4,6 +4,7 @@
  * Useful for Calendar operations, keeping code consistent, readable, and concise
  */
 
+import android.util.Log
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.Instant
@@ -273,6 +274,7 @@ class DTUtils {
 
         // Given a string formatted as "YYYYMMDD", return integer array [Y, M, D]
         fun parseDateStringToDate(dateString: String): Date {
+            Log.d("parseDateStringToDate", dateString)
             return Date(dateString.slice(0..3).toInt(), dateString.slice(4..5).toInt(), dateString.slice(6..7).toInt())
         }
     }

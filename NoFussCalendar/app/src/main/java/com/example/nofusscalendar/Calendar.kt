@@ -7,7 +7,7 @@ import Event
 import EventLookup
 import ICSUtils
 import TimeUnit
-import android.content.Intent
+import VEvent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -57,8 +57,9 @@ class Calendar : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val uri = intent.getStringExtra("uri") ?: "No uri"
-        val icsRaw = ICSUtils.readTextFromUri(this@Calendar, uri)?: ""
+        val uri = intent.getStringExtra("uri") ?: "No uri"  // URI of ICS file
+        val icsRaw = ICSUtils.readTextFromUri(this@Calendar, uri)?: "~"  // raw ICS string
+        val vevents = if (icsRaw == "~") { throw Exception("Error reading ICS file") } else ICSUtils.parseICS(icsRaw)  // VEvents array
 
         setContent {
             NoFussCalendarTheme {
@@ -75,7 +76,7 @@ class Calendar : ComponentActivity() {
                         .background(colorResource(R.color.beige))
                         .fillMaxWidth()
                         .fillMaxHeight()
-                        , icsRaw = icsRaw, uri = uri)
+                        , veventArray = vevents, uri = uri)
                 }
             }
         }
@@ -83,17 +84,57 @@ class Calendar : ComponentActivity() {
 }
 
 @Composable
-fun Calendar(modifier: Modifier = Modifier, icsRaw: String, uri: String) {
-    // ICS Parsing and Events
-    if (icsRaw == "") { Text("Error reading ICS file", color = colorResource(R.color.buttonred)) }
-    val events = ICSUtils.parseICS(icsRaw)  // contains all events info, easy to parse between .ics string
-    val eventLookup = EventLookup(); eventLookup.createFromVevents(events) // hash map for quick lookup & quick display
-    MainScreen(modifier = modifier, eventLookup = eventLookup, uri = uri)
+fun Calendar(modifier: Modifier = Modifier, veventArray: Array<VEvent>, uri: String) {
+    val context = LocalContext.current
+
+    // States
+    val displayEventDialog = remember{mutableStateOf(false)}
+    val initialEvent = remember{mutableStateOf(Event("", "", "", "", "", 11, 0, 12, 0, Date(1990, 1, 1), Date(1990, 1, 1), null))}
+
+    // Event Lookup class from VEvent array
+    val vevents = remember { mutableStateOf(veventArray) }
+    val eventLookup = EventLookup(); eventLookup.createFromVevents(vevents.value)
+
+    // Display NewEvent dialog / MainScreen
+    if (displayEventDialog.value) {
+        EventDialog(modifier = Modifier
+            .fillMaxHeight()
+            .fillMaxWidth()
+            .background(colorResource(R.color.beige)),
+            initialEvent.value,
+            onCancel = {displayEventDialog.value = false},
+            onConfirm = { vevent: VEvent ->
+                var createNewVevent = true
+                for (veventI in vevents.value.indices) {
+                    if (vevents.value[veventI].getUID() == vevent.getUID()) {  // same vevent, should override instead of creating a new one
+                        vevents.value[veventI] = vevent
+                        createNewVevent = false
+                        break
+                    }
+                }
+                if (createNewVevent) {vevents.value += vevent}  // no vevent with same UID found, create a new one
+                ICSUtils.writeVEventsToUri(context, uri, vevents.value)
+                displayEventDialog.value = false},
+            onDelete = {uid: String ->
+                for (veventI in vevents.value.indices) {
+                    if (vevents.value[veventI].getUID() == uid) {  // delete event with matching UID
+                        vevents.value[veventI] = VEvent(arrayOf(), null)
+                        break
+                    }
+                }
+                ICSUtils.writeVEventsToUri(context, uri, vevents.value)
+                displayEventDialog.value = false
+            })
+
+    } else {
+        MainScreen(modifier = modifier, eventLookup = eventLookup,
+            onNewEvent = { initialDate: Date -> displayEventDialog.value = true; initialEvent.value = Event("", "", "", "", "", 11, 0, 12, 0, initialDate, initialDate, null) },
+            onEditEvent = { event: Event -> initialEvent.value = event; displayEventDialog.value = true })
+    }
 }
 
 @Composable
-fun MainScreen(modifier: Modifier = Modifier, eventLookup: EventLookup, uri: String) {
-    val context = LocalContext.current
+fun MainScreen(modifier: Modifier = Modifier, eventLookup: EventLookup, onNewEvent: (initialDate: Date) -> Unit, onEditEvent: (initialEvent: Event) -> Unit) {
     val redraw = remember { mutableStateOf(0) }
 
     // Displayed date
@@ -154,15 +195,13 @@ fun MainScreen(modifier: Modifier = Modifier, eventLookup: EventLookup, uri: Str
             Events(modifier = Modifier
                 .background(colorResource(R.color.beige))
                 .fillMaxWidth()
-                .fillMaxHeight(), calDate.value, eventArray)
+                .fillMaxHeight(), calDate.value, eventArray, { event: Event -> onEditEvent(event) })
             // Add event button
             val iconSize = 96
             Box(modifier = Modifier
                 .padding(vertical = 20.dp)
                 .align(Alignment.BottomEnd)) {
-                IconButton(onClick = { val intent = Intent(context, NewEvent::class.java).apply {
-                    putExtra("selectedDate", calDate.value.formatAsString(DateFormat.YYYYMMDD))
-                    putExtra("uri", uri)}; context.startActivity(intent) }  // Start New Event activity
+                IconButton(onClick = { onNewEvent(calDate.value) }  // Start New Event activity
                     , modifier = Modifier.size(iconSize.dp)){ Icon(
                     painterResource(R.drawable.plus_box), tint = colorResource(R.color.buttongreen), contentDescription = "Add event", modifier = Modifier.size((iconSize*0.85).dp)) }
             }
@@ -173,7 +212,6 @@ fun MainScreen(modifier: Modifier = Modifier, eventLookup: EventLookup, uri: Str
 
 @Composable
 fun EventItem(title: String, location: String, description: String, color: String, start: String, end: String){
-    // TODO: add functionality that when clicked, start NewEvent activity with all appropriate info already-filled in
     val c = when(color){
         "black" -> colorResource(R.color.black_css3)
         "silver" -> colorResource(R.color.silver_css3)
@@ -188,16 +226,25 @@ fun EventItem(title: String, location: String, description: String, color: Strin
         "olive" -> colorResource(R.color.olive_css3)
         "yellow" -> colorResource(R.color.yellow_css3)
         "navy" -> colorResource(R.color.navy_css3)
-        "blue" -> colorResource(R.color.black_css3)
+        "blue" -> colorResource(R.color.blue_css3)
         "teal" -> colorResource(R.color.teal_css3)
         "aqua" -> colorResource(R.color.aqua_css3)
         else -> null
     }
-    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+    Row(modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp)) {
         // Color spacer  TODO: update height based on # of lines of description
-        Box(modifier = Modifier.width(6.dp).height((44).dp).clip(RoundedCornerShape(30.dp)).
-                                background(c?: colorResource(R.color.beige)).
-                                border(width = (0.4).dp, color = colorResource(R.color.blackshadow), shape = RoundedCornerShape(12.dp)))
+        Box(modifier = Modifier
+            .width(6.dp)
+            .height((44).dp)
+            .clip(RoundedCornerShape(30.dp))
+            .background(c ?: colorResource(R.color.beige))
+            .border(
+                width = (0.4).dp,
+                color = colorResource(R.color.blackshadow),
+                shape = RoundedCornerShape(12.dp)
+            ))
         Spacer(modifier = Modifier.padding(horizontal = 4.dp))
         Column {
             Row {
@@ -207,7 +254,10 @@ fun EventItem(title: String, location: String, description: String, color: Strin
                     Row {Icon(painterResource(R.drawable.map_marker), contentDescription = "Location icon")
                         Text(location); Spacer(modifier = Modifier.padding(horizontal = 8.dp))}
                 }
-                Spacer(Modifier.weight(1f).fillMaxHeight())
+                Spacer(
+                    Modifier
+                        .weight(1f)
+                        .fillMaxHeight())
                 // Start and end time
                 Column {
                     Text(start)
@@ -220,7 +270,11 @@ fun EventItem(title: String, location: String, description: String, color: Strin
             }
             Column {
                 Spacer(modifier = Modifier.padding(vertical = 2.dp))
-                Spacer(modifier = Modifier.height(1.dp).fillMaxWidth().padding(end = 22.dp).background(colorResource(R.color.pinkbeige)))
+                Spacer(modifier = Modifier
+                    .height(1.dp)
+                    .fillMaxWidth()
+                    .padding(end = 22.dp)
+                    .background(colorResource(R.color.pinkbeige)))
                 Spacer(modifier = Modifier.padding(vertical = 8.dp))
             }
         }
@@ -228,7 +282,7 @@ fun EventItem(title: String, location: String, description: String, color: Strin
 }
 
 @Composable
-fun Events(modifier: Modifier = Modifier, date: Date, eventArray: Array<Event>) {
+fun Events(modifier: Modifier = Modifier, date: Date, eventArray: Array<Event>, onEditEvent: (initialEvent: Event) -> Unit) {
     // Title
     Column (modifier = modifier) {
         Spacer(modifier = Modifier.height(20.dp))
@@ -243,8 +297,8 @@ fun Events(modifier: Modifier = Modifier, date: Date, eventArray: Array<Event>) 
                   val te = eventArray[event]
                   val startDate = te.startDate
                   val endDate = te.finalDate
-                  var startTime = if (te.startHour == -1) "all-day" else "${te.startHour}:${te.startMinute}"
-                  var endTime = if (te.startHour == -1) "" else "${te.endHour}:${te.endMinute}"
+                  var startTime = if (te.startHour == -1) "all-day" else "${te.startHour.toString().padStart(2, '0')}:${te.startMinute.toString().padStart(2, '0')}"
+                  var endTime = if (te.startHour == -1) "" else "${te.endHour.toString().padStart(2, '0')}:${te.endMinute.toString().padStart(2, '0')}"
                   if (startDate != date) {    // this event does not start on selected day
                       startTime += if (startDate.getYear() != date.getYear()) { " (${startDate.formatAsString(DateFormat.MONTHYEARSHORT)})" }  // event not in same year as start
                       else { " (${startDate.formatAsString(DateFormat.DAYMONTHSHORT)})" }  // event in same year but different month/day
@@ -254,15 +308,18 @@ fun Events(modifier: Modifier = Modifier, date: Date, eventArray: Array<Event>) 
                       else if (endDate.getYear() != date.getYear()) { " (${endDate.formatAsString(DateFormat.MONTHYEARSHORT)})" }  // event not in same year as end
                       else { " (${endDate.formatAsString(DateFormat.DAYMONTHSHORT)})" }  // event in same year but different month/day
                   }
-
-                  EventItem(
-                      title = te.title,
-                      location = te.location,
-                      description = te.description,
-                      color = te.color,
-                      start = startTime,
-                      end = endTime
-                  )
+                  Box {
+                      TextButton(onClick = { onEditEvent(te) }, modifier = Modifier.fillMaxWidth().height(44.dp)) {}
+                      EventItem(
+                          title = te.title,
+                          location = te.location,
+                          description = te.description,
+                          color = te.color,
+                          start = startTime,
+                          end = endTime
+                      )
+                  }
+                  if (event == eventArray.size - 1) {Spacer(modifier = Modifier.height(100.dp))}
               }
           }
         }
@@ -283,7 +340,10 @@ fun DaySelect(modifier: Modifier = Modifier, day: Int, selected: Boolean, hasEve
     }
 
     // Day box
-    Box(modifier = modifier.fillMaxWidth().background(c).border(width = b.dp, color = colorResource(R.color.blackshadow))) {
+    Box(modifier = modifier
+        .fillMaxWidth()
+        .background(c)
+        .border(width = b.dp, color = colorResource(R.color.blackshadow))) {
         TextButton(onClick = onClick){}
         Text(text = day.toString(), Modifier.align(Alignment.Center), color = colorResource(R.color.whitehighlight))
     }
