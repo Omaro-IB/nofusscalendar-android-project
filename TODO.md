@@ -3,7 +3,7 @@
 - [X] Calendar view (simple month and dates)
 - [x] Add/edit/delete event with dialogue boxes
 - [x] Read from .ics file and update view on startup
-- [ ] Write to .ics file upon any modification
+- [x] Write to .ics file upon any modification
 
 
 ## Other
@@ -31,10 +31,11 @@
 	- [x] current displayed year/month
 	- [x] current selected year/month/day
 	- [x] events (read from ICS on startup)
-- [ ] New activity "+" button
+- [x] New activity "+" button
 	- [x] When clicked, launch NewEvent activity with start year/month/day as current selected year/month/day
 	- [x] If "cancel" clicked, exit the activity
-	- [ ] if "add" clicked, add to ICS file and exit the activity
+	- [x] if "add" clicked, add to ICS file and exit the activity
+	- [x] if an event is clicked, edit, add to ICS file, and exit the activity
 - [x] Minor improvements
 	- [x] Only do month lookup when month is changed
 	- [x] Add coloring to days with events in monthDays component
